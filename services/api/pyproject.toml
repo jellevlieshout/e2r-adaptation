@@ -12,6 +12,9 @@ dependencies = [
     "sqlmodel==0.0.24",
     "twilio>=9.0.0",
     "uvicorn[standard]==0.35.0",
+    "langgraph",
+    "langchain",
+    "langchain-openai",
 ]
 
 [project.scripts]

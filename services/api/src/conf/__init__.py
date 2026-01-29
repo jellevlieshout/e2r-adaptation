@@ -41,12 +41,23 @@ HTTP_EXPOSE_ERRORS = EnvVarSpec(
     type=(bool, ...),
 )
 
+## OpenRouter ##
+
+OPENROUTER_API_KEY = EnvVarSpec(id="OPENROUTER_API_KEY", default="")
+
+OPENROUTER_MODEL = EnvVarSpec(id="OPENROUTER_MODEL", default="tngtech/deepseek-r1t2-chimera:free")
+
+OPENROUTER_BASE_URL = EnvVarSpec(id="OPENROUTER_BASE_URL", default="https://openrouter.ai/api/v1")
+
 #### Validation ####
 VALIDATED_ENV_VARS = [
     HTTP_AUTORELOAD,
     HTTP_EXPOSE_ERRORS,
     HTTP_PORT,
     LOG_LEVEL,
+    OPENROUTER_API_KEY,
+    OPENROUTER_MODEL,
+    OPENROUTER_BASE_URL,
 ]
 
 def validate() -> bool:
@@ -66,3 +77,12 @@ def get_http_conf() -> HttpServerConf:
         port=env.parse(HTTP_PORT),
         autoreload=env.parse(HTTP_AUTORELOAD),
     )
+
+def get_openrouter_api_key() -> str:
+    return env.parse(OPENROUTER_API_KEY)
+
+def get_openrouter_model() -> str:
+    return env.parse(OPENROUTER_MODEL)
+
+def get_openrouter_base_url() -> str:
+    return env.parse(OPENROUTER_BASE_URL)

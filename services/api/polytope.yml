@@ -42,6 +42,7 @@ tools:
             - { name: HTTP_AUTORELOAD, value: pt.param dev-mode }
             - { name: HTTP_PORT, value: pt.param port }
             - { name: LOG_LEVEL, value: pt.value api-log-level }
+            - { name: OPENROUTER_API_KEY, value: pt.secret openrouter-api-key }
           mounts:
             - { path: /root/.cache/, source: { type: volume, scope: project, id: api-dependency-cache } }
             - { path: /clients/python, source: { type: repo, path: /clients/python, repo: "#pt-clj pt/module-project-ref" } }
