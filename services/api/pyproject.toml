@@ -15,6 +15,7 @@ dependencies = [
     "langgraph",
     "langchain",
     "langchain-openai",
+    "langsmith",
 ]
 
 [project.scripts]

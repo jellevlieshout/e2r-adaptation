@@ -43,6 +43,9 @@ tools:
             - { name: HTTP_PORT, value: pt.param port }
             - { name: LOG_LEVEL, value: pt.value api-log-level }
             - { name: OPENROUTER_API_KEY, value: pt.secret openrouter-api-key }
+            - { name: LANGCHAIN_API_KEY, value: pt.secret langchain-api-key }
+            - { name: LANGCHAIN_TRACING_V2, value: "true" }
+            - { name: LANGCHAIN_PROJECT, value: "e2r-adaptation" }
           mounts:
             - { path: /root/.cache/, source: { type: volume, scope: project, id: api-dependency-cache } }
             - { path: /clients/python, source: { type: repo, path: /clients/python, repo: "#pt-clj pt/module-project-ref" } }

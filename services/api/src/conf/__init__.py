@@ -49,6 +49,19 @@ OPENROUTER_MODEL = EnvVarSpec(id="OPENROUTER_MODEL", default="tngtech/deepseek-r
 
 OPENROUTER_BASE_URL = EnvVarSpec(id="OPENROUTER_BASE_URL", default="https://openrouter.ai/api/v1")
 
+## LangSmith ##
+
+LANGCHAIN_TRACING_V2 = EnvVarSpec(
+    id="LANGCHAIN_TRACING_V2",
+    default="false",
+    parse=lambda x: x.lower() == "true",
+    type=(bool, ...),
+)
+
+LANGCHAIN_API_KEY = EnvVarSpec(id="LANGCHAIN_API_KEY", default="")
+
+LANGCHAIN_PROJECT = EnvVarSpec(id="LANGCHAIN_PROJECT", default="default")
+
 #### Validation ####
 VALIDATED_ENV_VARS = [
     HTTP_AUTORELOAD,
@@ -57,7 +70,11 @@ VALIDATED_ENV_VARS = [
     LOG_LEVEL,
     OPENROUTER_API_KEY,
     OPENROUTER_MODEL,
+    OPENROUTER_MODEL,
     OPENROUTER_BASE_URL,
+    LANGCHAIN_TRACING_V2,
+    LANGCHAIN_API_KEY,
+    LANGCHAIN_PROJECT,
 ]
 
 def validate() -> bool:
@@ -86,3 +103,12 @@ def get_openrouter_model() -> str:
 
 def get_openrouter_base_url() -> str:
     return env.parse(OPENROUTER_BASE_URL)
+
+def get_langchain_tracing_v2() -> bool:
+    return env.parse(LANGCHAIN_TRACING_V2)
+
+def get_langchain_api_key() -> str:
+    return env.parse(LANGCHAIN_API_KEY)
+
+def get_langchain_project() -> str:
+    return env.parse(LANGCHAIN_PROJECT)
