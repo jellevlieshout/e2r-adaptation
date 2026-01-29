@@ -16,12 +16,12 @@ import { mockAdaptations, delay, generateMockAdaptation } from "../mock-data";
 export async function createAdaptation(
   request: AdaptationRequest
 ): Promise<AdaptationResponse> {
-  if (isMockApiEnabled()) {
-    await delay(1500); // Simulate processing time
-    return generateMockAdaptation(request.text);
-  }
+  // if (isMockApiEnabled()) {
+  //   await delay(1500); // Simulate processing time
+  //   return generateMockAdaptation(request.text);
+  // }
 
-  return apiClient<AdaptationResponse>("/api/adaptations", {
+  return apiClient<AdaptationResponse>("/adapt", {
     method: "POST",
     body: request,
   });
