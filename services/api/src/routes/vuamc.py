@@ -19,6 +19,7 @@ class TokenResponse(BaseModel):
     is_metaphor: bool
     metaphor_type: Optional[str] = None
     function: Optional[str] = None
+    status: Optional[str] = None
 
 class SentenceResponse(BaseModel):
     id: str
@@ -67,6 +68,7 @@ async def list_metaphors(
         for doc in client.documents():
             for sentence in doc.sentences:
                 for token in sentence.tokens:
+                    # Note: We now treat mFlags as metaphors too (is_metaphor=True in client if mFlag)
                     if token.is_metaphor:
                         # Apply filters
                         if search and search.lower() not in token.text.lower():
@@ -82,7 +84,8 @@ async def list_metaphors(
                                 pos=token.pos,
                                 is_metaphor=token.is_metaphor,
                                 metaphor_type=token.metaphor_type,
-                                function=token.function
+                                function=token.function,
+                                status=token.status
                             ),
                             sentence=SentenceResponse(
                                 id=sentence.id,
@@ -94,7 +97,8 @@ async def list_metaphors(
                                         pos=t.pos,
                                         is_metaphor=t.is_metaphor,
                                         metaphor_type=t.metaphor_type,
-                                        function=t.function
+                                        function=t.function,
+                                        status=t.status
                                     ) for t in sentence.tokens
                                 ]
                             ),

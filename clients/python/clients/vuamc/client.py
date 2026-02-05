@@ -75,11 +75,18 @@ class VUAMCClient:
                             
                             seg = child.find('tei:seg', self.NAMESPACES)
                             if seg is not None:
-                                # It has a segment, check if it is mrw
-                                if seg.get('function') == 'mrw':
+                                # It has a segment, check if it is mrw or mFlag
+                                seg_function = seg.get('function')
+                                if seg_function in ('mrw', 'mFlag'):
                                     is_metaphor = True
                                     metaphor_type = seg.get('type')
-                                    function = seg.get('function')
+                                    function = seg_function
+                                    # Map 'subtype' to 'status' as per observation of XML structure
+                                    # The text mentions 'status' code but XML uses 'subtype' for WIDLII, PP
+                                    status = seg.get('subtype')
+                                    if status:
+                                        # Clean up status if needed, but it seems to be just the code
+                                        pass
                                 
                                 token_text = seg.text or ""
                                 if seg.tail:
@@ -98,7 +105,8 @@ class VUAMCClient:
                                 pos=child.get('type', ''),
                                 is_metaphor=is_metaphor,
                                 metaphor_type=metaphor_type,
-                                function=function
+                                function=function,
+                                status=status if is_metaphor else None
                             ))
                             
                         elif tag_name == 'c':
