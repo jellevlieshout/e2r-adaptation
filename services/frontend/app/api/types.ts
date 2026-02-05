@@ -53,6 +53,52 @@ export interface AdaptationResponse {
 }
 
 // =============================================================================
+// VUAMC (Metaphor) Types
+// =============================================================================
+
+export interface Token {
+  text: string;
+  lemma: string;
+  pos: string;
+  is_metaphor: boolean;
+  metaphor_type?: string;
+  function?: string;
+  status?: string;
+}
+
+export interface Sentence {
+  id: string;
+  text: string;
+  tokens: Token[];
+}
+
+export interface MetaphorResponse {
+  token: Token;
+  sentence: Sentence;
+  document_id: string;
+}
+
+// =============================================================================
+// SemEval Types
+// =============================================================================
+
+export interface SemEvalSample {
+  id: string;
+  mwe1: string;
+  language: string;
+  sentence1: string;
+  sentence2?: string;
+  mwe2?: string;
+  sim?: string;
+  label?: string;
+  context_previous?: string;
+  context_next?: string;
+  setting?: string;
+  alternative1?: string;
+  alternative2?: string;
+}
+
+// =============================================================================
 // API Response Wrappers
 // =============================================================================
 
