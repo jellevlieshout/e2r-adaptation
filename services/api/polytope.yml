@@ -50,4 +50,5 @@ tools:
             - { path: /root/.cache/, source: { type: volume, scope: project, id: api-dependency-cache } }
             - { path: /clients/python, source: { type: repo, path: /clients/python, repo: "#pt-clj pt/module-project-ref" } }
             - { path: /models/python, source: { type: repo, path: /models/python, repo: "#pt-clj pt/module-project-ref" } }
+            - { path: /datasets, source: { type: repo, path: /datasets, repo: "#pt-clj pt/module-project-ref" } }
 
