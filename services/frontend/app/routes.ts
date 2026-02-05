@@ -9,4 +9,5 @@ export default [
   route("adapt", "routes/adapt.tsx"),
   route("history", "routes/history.tsx"),
   route("history/:id", "routes/history.$id.tsx"),
+  route("metaphors", "routes/metaphors.tsx"),
 ] satisfies RouteConfig;
