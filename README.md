@@ -24,3 +24,7 @@ The workflow follows these stages:
 - **Infrastructure:** **UPM Compute Cluster** (access granted via the signed form) supplemented by **OpenRouter**.
 - **Observability:** **LangSmith** or **Weights & Biases** for tracing metrics and workflow results.
 - **Output:** An **Open Source Web Application** to showcase results and facilitate evaluation.
+
+### 5. Datasets
+
+- VUAMC: Gerard J Steen; Aletta G Dorst; J Berenike Herrmann; et al., 2010, VU Amsterdam Metaphor Corpus, Oxford Text Archive, http://hdl.handle.net/20.500.12024/2541.
