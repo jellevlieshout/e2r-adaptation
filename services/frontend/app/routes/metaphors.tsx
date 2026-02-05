@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
+import { useMetaphors } from "~/hooks/use-vuamc";
 import {
     Table,
     TableBody,
@@ -20,39 +20,7 @@ import { HelpCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 
-interface Token {
-    text: string;
-    lemma: string;
-    pos: string;
-    is_metaphor: boolean;
-    metaphor_type?: string;
-    function?: string;
-    status?: string;
-}
 
-interface Sentence {
-    id: string;
-    text: string;
-    tokens: Token[];
-}
-
-interface MetaphorResponse {
-    token: Token;
-    sentence: Sentence;
-    document_id: string;
-}
-
-const fetchMetaphors = async (search: string) => {
-    const params = new URLSearchParams();
-    if (search) params.append("search", search);
-    params.append("limit", "50");
-
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/vuamc/metaphors?${params.toString()}`);
-    if (!response.ok) {
-        throw new Error("Failed to fetch metaphors");
-    }
-    return response.json() as Promise<MetaphorResponse[]>;
-};
 
 export default function MetaphorsPage() {
     const [search, setSearch] = useState("");
@@ -67,10 +35,7 @@ export default function MetaphorsPage() {
         // For this MVP, I'll add a 'Search' button or just update on blur/enter to avoid spamming.
     };
 
-    const { data, isLoading, error, refetch } = useQuery({
-        queryKey: ["metaphors", debouncedSearch],
-        queryFn: () => fetchMetaphors(debouncedSearch),
-    });
+    const { data, isLoading, error } = useMetaphors(debouncedSearch);
 
     return (
         <div className="container mx-auto py-10 space-y-8">

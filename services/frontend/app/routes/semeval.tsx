@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
+import { useSemevalSamples } from "~/hooks/use-semeval";
 import {
     Table,
     TableBody,
@@ -15,45 +15,14 @@ import { Badge } from "~/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { Label } from "~/components/ui/label";
 
-interface SemEvalSample {
-    id: string;
-    mwe1: string;
-    language: string;
-    sentence1: string;
-    sentence2?: string;
-    mwe2?: string;
-    sim?: string;
-    label?: string;
-    context_previous?: string;
-    context_next?: string;
-    setting?: string;
-    alternative1?: string;
-    alternative2?: string;
-}
 
-const fetchSamples = async (task: string, split: string, language: string) => {
-    const params = new URLSearchParams();
-    if (task && task !== "all") params.append("task", task);
-    if (split && split !== "all") params.append("split", split);
-    if (language && language !== "all") params.append("language", language);
-    params.append("limit", "50");
-
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/semeval/samples?${params.toString()}`);
-    if (!response.ok) {
-        throw new Error("Failed to fetch samples");
-    }
-    return response.json() as Promise<SemEvalSample[]>;
-};
 
 export default function SemEvalPage() {
     const [task, setTask] = useState("all");
     const [split, setSplit] = useState("all");
     const [language, setLanguage] = useState("all");
 
-    const { data: samples, isLoading, error } = useQuery({
-        queryKey: ["semeval-samples", task, split, language],
-        queryFn: () => fetchSamples(task, split, language),
-    });
+    const { data: samples, isLoading, error } = useSemevalSamples(task, split, language);
 
     return (
         <div className="container mx-auto py-10 space-y-8">
