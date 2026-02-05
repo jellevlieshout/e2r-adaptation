@@ -19,6 +19,7 @@ const navItems = [
   { href: "/", label: "Dashboard" },
   { href: "/adapt", label: "Adapt" },
   { href: "/history", label: "History" },
+  { href: "/semeval", label: "SemEval" },
 ];
 
 // =============================================================================
