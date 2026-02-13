@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent } from "react";
+import { Search, AlertCircle } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { useSemevalSamples } from "~/hooks/use-semeval";
@@ -77,10 +78,29 @@ export default function SemEvalPage() {
                         </div>
                     </div>
 
-                    {isLoading && <div>Loading...</div>}
-                    {error && <div className="text-red-500">Error: {(error as Error).message}</div>}
+                    {isLoading && (
+                        <div className="flex justify-center py-10">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                    )}
+                    {error && (
+                        <div className="p-4 bg-red-50 text-red-700 rounded-md mb-6 flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4" />
+                            <span>Error: {(error as Error).message}</span>
+                        </div>
+                    )}
 
-                    {samples && (
+                    {samples && samples.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/20">
+                            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4 text-muted-foreground">
+                                <Search className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-lg font-medium">No samples found</h3>
+                            <p className="text-muted-foreground max-w-xs mx-auto">
+                                No SemEval samples match your current filter criteria. Try adjusting the task, split, or language.
+                            </p>
+                        </div>
+                    ) : samples && (
                         <Table>
                             <TableHeader>
                                 <TableRow>

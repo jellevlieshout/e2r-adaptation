@@ -1,4 +1,4 @@
-import { Home, List, Search, Wand2, FlaskConical } from "lucide-react";
+import { Home, List, Search, Wand2, FlaskConical, History } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import {
     Sidebar,
@@ -19,9 +19,14 @@ const items = [
         icon: Home,
     },
     {
-        title: "Experiment Runs",
-        url: "/runs",
-        icon: List,
+        title: "Adapt",
+        url: "/adapt",
+        icon: Wand2,
+    },
+    {
+        title: "History",
+        url: "/history",
+        icon: History,
     },
     {
         title: "Detect",
@@ -29,16 +34,15 @@ const items = [
         icon: Search,
     },
     {
-        title: "Adapt",
-        url: "/adapt", // Assuming this route exists or will exist
-        icon: Wand2,
+        title: "Experiment Runs",
+        url: "/runs",
+        icon: List,
     },
     {
         title: "SemEval Tasks",
-        url: "/semeval", // Assuming this route exists or will exist
+        url: "/semeval",
         icon: FlaskConical,
     },
-
 ];
 
 export function AppSidebar() {
