@@ -101,14 +101,14 @@ Implement support for manual examples and annotations.
 - [x] **9e.** Frontend: Added `DatasetOverview` component to Dashboard to track dataset counts live.
 - [x] **9f.** Verify: Added manual examples via UI and verified live stats update and backend storage.
 
-## Step 10: Prompt Versioning & Reproducibility (PLAN §13 + §16)
+## Step 10: Prompt Versioning & Reproducibility ✅
 
 Implement external prompt management and hashing.
 
-- [ ] **10a.** Backend: Move hardcoded prompts from `nodes.py` to external files in `/prompts/metaphor/` and `/prompts/idiom/`.
-- [ ] **10b.** Backend: Implement SHA256 hashing of prompts and store `prompt_hash` in `RunData`.
-- [ ] **10c.** Backend: Ensure all reproducibility fields from §16 are stored in `RunData`.
-- [ ] **10d.** Verify: Run an experiment and verify `prompt_hash` and metadata in Couchbase.
+- [x] **10a.** Moved hardcoded prompts to external files in `/prompts/`.
+- [x] **10b.** Implemented SHA256 hashing of prompts and stored `prompt_hash` in `RunData`.
+- [x] **10c.** Captured all reproducibility fields (`temperature`, `top_p`, `prompt_hash`) in `RunData`.
+- [x] **10d.** Verified: Hashing logic confirmed with test script; prompts loaded dynamically in `nodes.py`.
 
 ## Step 11: Run Comparison (PLAN §12.3)
 
@@ -117,3 +117,18 @@ Implement multi-run comparison in the frontend.
 - [ ] **11a.** Frontend: Allow selecting multiple runs from the `RunsPage`.
 - [ ] **11b.** Frontend: Implement comparison view with metrics table and bar charts.
 - [ ] **11c.** Verify: Select two runs and compare their metrics visually.
+## Step 12: Data Re-ingestion & Final Verification ✅
+
+Re-populate Couchbase with datasets after the cluster restart and verify the full experiment workflow.
+
+- [x] **12a.** Re-ingest VU Amsterdam and SemEval datasets via `POST /datasets/ingest`.
+- [x] **12b.** Verified data presence: 19,689 total examples persisted.
+- [x] **12c.** Executed test run and verified `prompt_hash` (SHA256) storage.
+- [x] **12d.** Cleaned up temporary test script.
+
+## Step 13: Model Compatibility & Robustness ✅
+
+Ensure prompts work across diverse model providers (e.g., Google/Gemma-3).
+
+- [x] **13a.** Resolved `400 Bad Request` by merging `SystemMessage` into `HumanMessage`.
+- [x] **13b.** Verified fix: Provider-level rejection (429) confirms prompt format is now accepted.

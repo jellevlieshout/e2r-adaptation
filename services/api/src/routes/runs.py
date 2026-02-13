@@ -12,11 +12,13 @@ from models.entities.run import RunData, RunStatus
 from models.types.shared import DatasetType, PhenomenonType, TaskType
 from workflows.graph import get_graph
 from workflows.state import GraphState
-from models.operations.evaluation import (
+from models.operations import (
     compute_f1_token,
     compute_f1_span,
     compute_f1_sentence,
-    compute_bleu
+    compute_bleu,
+    load_prompt,
+    compute_prompt_hash
 )
 from clients.couchbase.couchbase import get_keyspace, Keyspace
 
@@ -173,6 +175,14 @@ async def create_run(request: RunRequest, background_tasks: BackgroundTasks):
     """
     run_id = str(uuid.uuid4())
     
+    # Load prompt and compute hash
+    try:
+        prompt_text = load_prompt(request.phenomenon.value, request.task_type.value)
+        prompt_hash = compute_prompt_hash(prompt_text)
+    except Exception as e:
+        logger.error(f"Failed to load prompt for hash: {e}")
+        prompt_hash = "error"
+
     run_data = RunData(
         run_id=run_id,
         dataset=request.dataset,
@@ -182,6 +192,7 @@ async def create_run(request: RunRequest, background_tasks: BackgroundTasks):
         temperature=request.temperature,
         top_p=request.top_p,
         prompt_version=request.prompt_version,
+        prompt_hash=prompt_hash,
     )
     
     # Save initial run document

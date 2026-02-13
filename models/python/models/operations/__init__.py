@@ -15,6 +15,8 @@ from models.operations.ingestion import (
     build_semeval_replacement_map,
 )
 
+from models.operations.prompts import load_prompt, compute_prompt_hash
+
 __all__ = [
     "normalize_spans",
     "compute_f1_token",
@@ -26,4 +28,6 @@ __all__ = [
     "parse_vu_sentence",
     "parse_semeval_sample",
     "build_semeval_replacement_map",
+    "load_prompt",
+    "compute_prompt_hash",
 ]

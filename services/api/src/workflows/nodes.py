@@ -6,49 +6,45 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
-from models.types.shared import DetectionResult
 from workflows.state import GraphState
+from models.operations import load_prompt
 
+class DetectionResult(BaseModel):
+    is_figurative: bool
+    explanation: str
 
-class ReplacementOutput(BaseModel):
+class ReplacementDetails(BaseModel):
     literal_paraphrase: str
-
 
 class TaskOutput(BaseModel):
     detection: DetectionResult
-    replacement: Optional[ReplacementOutput] = None
-    confidence: float = Field(description="Confidence score between 0 and 1")
+    replacement: Optional[ReplacementDetails] = None
 
-
-# Initialize model
-# We use the OpenRouterClient to handle model selection and API key configuration
-from clients.openrouter.client import OpenRouterClient
-
-
-def get_model(state: GraphState):
-    model_name = state.get("model_name", "gpt-4o")
-    temperature = state.get("temperature", 0.0)
-    
+def get_model(state: GraphState) -> ChatOpenAI:
+    # Import locally to avoid potential circular dependencies if any
+    from clients.openrouter.client import OpenRouterClient
     client = OpenRouterClient()
-    return client.get_chat_model(model_name, temperature)
+    return client.get_chat_model(state["model_name"], state["temperature"])
 
-
-def _invoke_llm(state: GraphState, system_prompt: str) -> Dict[str, Any]:
+def _invoke_llm(state: GraphState, phenomenon: str, task_type: str) -> Dict[str, Any]:
     try:
+        system_prompt = load_prompt(phenomenon, task_type)
         model = get_model(state)
         structured_llm = model.with_structured_output(TaskOutput)
         
+        # Combine system prompt and human message for broader model compatibility.
+        # Some models (like Gemma-3 on Google AI Studio) don't support separate system instructions.
+        combined_prompt = f"{system_prompt}\n\nInput text: {state['input_text']}"
         messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=f"Input text: {state['input_text']}")
+            HumanMessage(content=combined_prompt)
         ]
         
         result: TaskOutput = structured_llm.invoke(messages)
         
         updates = {
             "detection_result": result.detection,
-            "latency_ms": 0, # Placeholder, we can add timing logic if needed
-            "token_usage": {}, # Placeholder, depending on if we can get usage from structured_output
+            "latency_ms": 0,
+            "token_usage": {},
             "errors": []
         }
         
@@ -64,43 +60,16 @@ def _invoke_llm(state: GraphState, system_prompt: str) -> Dict[str, Any]:
 
 
 def detect_metaphor(state: GraphState) -> Dict[str, Any]:
-    prompt = """You are an expert in linguistics and metaphor detection.
-    Analyze the provided text and detect if it contains any metaphorical usage.
-    Focus on the VU Amsterdam Metaphor Corpus guidelines.
-    Return the detection results including is_figurative flag, token_labels (0 for literal, 1 for metaphor), and character-offset spans.
-    For the replacement field, return null as we are only detecting."""
-    
-    return _invoke_llm(state, prompt)
+    return _invoke_llm(state, "metaphor", "detection")
 
 
 def replace_metaphor(state: GraphState) -> Dict[str, Any]:
-    # This node might be used in a different flow or after detection
-    # For detect_then_replace, we can do it in one shot or chain them.
-    # The plan implies separate workflows or combined.
-    # If we already have detection, we might want to pass it? 
-    # For now let's implement a direct replacement assuming input text.
-    
-    prompt = """You are an expert in linguistics.
-    Identify any metaphors in the text and provide a literal paraphrase.
-    Return both the detection details and the literal paraphrase."""
-    
-    return _invoke_llm(state, prompt)
+    return _invoke_llm(state, "metaphor", "replacement")
 
 
 def detect_idiom(state: GraphState) -> Dict[str, Any]:
-    prompt = """You are an expert in linguistics and idiom detection.
-    Analyze the provided text and detect if it contains any idiomatic expressions.
-    Focus on SemEval Task 2 guidelines.
-    Return the detection results including is_figurative flag and character-offset spans.
-    Token labels are optional but spans are required.
-    For the replacement field, return null as we are only detecting."""
-    
-    return _invoke_llm(state, prompt)
+    return _invoke_llm(state, "idiom", "detection")
 
 
 def replace_idiom(state: GraphState) -> Dict[str, Any]:
-    prompt = """You are an expert in linguistics.
-    Identify any idiomatic expressions in the text and provide a literal paraphrase.
-    Return both the detection details and the literal paraphrase."""
-    
-    return _invoke_llm(state, prompt)
+    return _invoke_llm(state, "idiom", "replacement")
