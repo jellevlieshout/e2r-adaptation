@@ -14,4 +14,5 @@ export default [
   route("semeval", "routes/semeval.tsx"),
   route("runs", "routes/runs.tsx"),
   route("runs/:runId", "routes/runs.$runId.tsx"),
+  route("manual/new", "routes/manual.new.tsx"),
 ] satisfies RouteConfig;

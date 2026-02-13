@@ -3,7 +3,9 @@ import { useAdaptations } from "~/hooks/use-adaptations";
 import { AppLayout } from "~/components/layout/app-layout";
 import { ProtectedRoute } from "~/components/layout/protected-route";
 import { Button } from "~/components/ui/button";
-import { Wand2, List } from "lucide-react";
+import { Wand2, List, BarChart3 } from "lucide-react";
+import { useDatasetStats } from "~/hooks/use-dataset-stats";
+import { Skeleton } from "~/components/ui/skeleton";
 import {
   Card,
   CardContent,
@@ -12,7 +14,6 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
-import { Skeleton } from "~/components/ui/skeleton";
 import type { Route } from "./+types/home";
 import type { FigurativeExpression } from "~/api/types";
 
@@ -65,6 +66,52 @@ function RecentActivitySkeleton() {
 }
 
 // =============================================================================
+// Dataset Stats component
+// =============================================================================
+
+function DatasetOverview() {
+  const { data: stats, isLoading } = useDatasetStats();
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!stats) return null;
+
+  const statItems = [
+    { label: "Total Examples", value: stats.total, color: "text-gray-600" },
+    { label: "VU Amsterdam", value: stats.vu_amsterdam, color: "text-blue-600" },
+    { label: "SemEval Tasks", value: stats.semeval, color: "text-purple-600" },
+    { label: "Manual Examples", value: stats.manual, color: "text-green-600" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {statItems.map((item) => (
+        <Card key={item.label} className="border-none shadow-sm bg-white dark:bg-gray-800">
+          <CardHeader className="p-4 pb-0">
+            <CardDescription className="text-xs uppercase tracking-wider font-semibold">
+              {item.label}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 pt-1">
+            <span className={`text-2xl font-bold ${item.color}`}>
+              {item.value.toLocaleString()}
+            </span>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// =============================================================================
 // Main Component
 // =============================================================================
 
@@ -105,6 +152,9 @@ function DashboardContent() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Dataset Stats */}
+        <DatasetOverview />
 
         {/* Recent Activity */}
         <Card>

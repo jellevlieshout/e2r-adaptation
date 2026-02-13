@@ -90,3 +90,30 @@ Refactor frontend to use TanStack Query and harmonize navigation.
 - [x] **8d.** Implement "Metrics" tab in Run Details page (currently "Coming Soon").
 - [x] **8e.** Improve empty states for "Recent Adaptations" and SemEval tasks.
 - [x] **8f.** Harmonize home page navigation: remove redundant "dashboard inside a dashboard" in `home.tsx` / `AppLayout`. Refactored `AppLayout.tsx` to remove the header and centralized all links in the `AppSidebar.tsx`.
+## Step 9: Manual Mode (PLAN §11) ✅
+
+Implement support for manual examples and annotations.
+
+- [x] **9a.** Backend: Created `manual` router and implemented `POST /manual` to create manual dataset examples.
+- [x] **9b.** Backend: Implemented `POST /manual/{example_id}/annotate` to update gold labels/spans for manual examples.
+- [x] **9c.** Frontend: Implemented `fetchDatasetStats`, `createManualExample`, and `annotateManualExample` in API client.
+- [x] **9d.** Frontend: Created `manual/new` route with a creation form.
+- [x] **9e.** Frontend: Added `DatasetOverview` component to Dashboard to track dataset counts live.
+- [x] **9f.** Verify: Added manual examples via UI and verified live stats update and backend storage.
+
+## Step 10: Prompt Versioning & Reproducibility (PLAN §13 + §16)
+
+Implement external prompt management and hashing.
+
+- [ ] **10a.** Backend: Move hardcoded prompts from `nodes.py` to external files in `/prompts/metaphor/` and `/prompts/idiom/`.
+- [ ] **10b.** Backend: Implement SHA256 hashing of prompts and store `prompt_hash` in `RunData`.
+- [ ] **10c.** Backend: Ensure all reproducibility fields from §16 are stored in `RunData`.
+- [ ] **10d.** Verify: Run an experiment and verify `prompt_hash` and metadata in Couchbase.
+
+## Step 11: Run Comparison (PLAN §12.3)
+
+Implement multi-run comparison in the frontend.
+
+- [ ] **11a.** Frontend: Allow selecting multiple runs from the `RunsPage`.
+- [ ] **11b.** Frontend: Implement comparison view with metrics table and bar charts.
+- [ ] **11c.** Verify: Select two runs and compare their metrics visually.

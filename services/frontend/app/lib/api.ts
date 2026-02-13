@@ -49,6 +49,25 @@ export interface PredictionData {
     created_at: string;
 }
 
+export interface ExampleData {
+    dataset: string;
+    phenomenon: string;
+    example_id: string;
+    text: string;
+    tokens?: string[];
+    gold_detection?: DetectionResult;
+    gold_replacement?: string | null;
+    metadata: Record<string, any>;
+    created_at: string;
+}
+
+export interface DatasetStats {
+    total: number;
+    vu_amsterdam: number;
+    semeval: number;
+    manual: number;
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3030";
 
 export async function fetchRuns(limit = 50, offset = 0): Promise<RunData[]> {
@@ -85,6 +104,48 @@ export async function fetchRunMetrics(runId: string): Promise<RunMetrics> {
     const response = await fetch(`${API_BASE_URL}/runs/${runId}/metrics`);
     if (!response.ok) {
         throw new Error(`Failed to fetch metrics for run ${runId}: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+export async function createManualExample(data: {
+    text: string;
+    phenomenon: string;
+    example_id?: string;
+}): Promise<ExampleData> {
+    const response = await fetch(`${API_BASE_URL}/manual`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to create manual example: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+export async function annotateManualExample(
+    exampleId: string,
+    annotation: {
+        gold_detection?: Partial<DetectionResult>;
+        gold_replacement?: string;
+    }
+): Promise<ExampleData> {
+    const response = await fetch(`${API_BASE_URL}/manual/${exampleId}/annotate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(annotation),
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to annotate manual example ${exampleId}: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+export async function fetchDatasetStats(): Promise<DatasetStats> {
+    const response = await fetch(`${API_BASE_URL}/datasets/stats`);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch dataset stats: ${response.statusText}`);
     }
     return response.json();
 }

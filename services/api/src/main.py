@@ -10,6 +10,7 @@ from routes.detection import router as detection_router
 from routes.semeval import router as semeval_router
 from routes.datasets import router as datasets_router
 from routes.runs import router as runs_router
+from routes.manual import router as manual_router
 import conf
 from init import init, deinit
 
@@ -48,6 +49,7 @@ app.include_router(detection_router)
 app.include_router(semeval_router)
 app.include_router(datasets_router)
 app.include_router(runs_router)
+app.include_router(manual_router)
 
 app.add_middleware(
     CORSMiddleware,

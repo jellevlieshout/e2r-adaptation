@@ -1,4 +1,4 @@
-import { Home, List, Search, Wand2, FlaskConical, History } from "lucide-react";
+import { Home, List, Search, Wand2, FlaskConical, History, PlusCircle } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import {
     Sidebar,
@@ -42,6 +42,11 @@ const items = [
         title: "SemEval Tasks",
         url: "/semeval",
         icon: FlaskConical,
+    },
+    {
+        title: "New Manual Example",
+        url: "/manual/new",
+        icon: PlusCircle,
     },
 ];
 
