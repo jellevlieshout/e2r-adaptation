@@ -21,22 +21,16 @@ class TaskOutput(BaseModel):
 
 
 # Initialize model
-# We assume OPENAI_API_KEY is set in the environment or OPENROUTER_API_KEY
-# If OPENROUTER_API_KEY is present, we configure for OpenRouter
+# We use the OpenRouterClient to handle model selection and API key configuration
+from clients.openrouter.client import OpenRouterClient
+
+
 def get_model(state: GraphState):
     model_name = state.get("model_name", "gpt-4o")
     temperature = state.get("temperature", 0.0)
     
-    openrouter_api_key = os.environ.get("OPENROUTER_API_KEY")
-    if openrouter_api_key:
-        return ChatOpenAI(
-            model=model_name,
-            temperature=temperature,
-            api_key=openrouter_api_key,
-            base_url="https://openrouter.ai/api/v1",
-        )
-    
-    return ChatOpenAI(model=model_name, temperature=temperature)
+    client = OpenRouterClient()
+    return client.get_chat_model(model_name, temperature)
 
 
 def _invoke_llm(state: GraphState, system_prompt: str) -> Dict[str, Any]:

@@ -56,5 +56,5 @@ Implement the experiment runner endpoint and LangGraph workflows.
 
 Refactor the direct usage of `ChatOpenAI` and `OpenRouter` configuration in `nodes.py` into a dedicated client.
 
-- [ ] **5a.** Create `clients/python/clients/openrouter/client.py` to encapsulate OpenRouter API interactions.
-- [ ] **5b.** Update `services/api/src/workflows/nodes.py` to use the new `OpenRouterClient`.
+- [x] **5a.** Created `clients/python/clients/openrouter/client.py` to encapsulate OpenRouter API interactions.
+- [x] **5b.** Updated `services/api/src/workflows/nodes.py` to use the new `OpenRouterClient`.

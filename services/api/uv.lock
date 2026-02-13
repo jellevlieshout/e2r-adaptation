@@ -330,12 +330,16 @@ version = "0.1.0"
 source = { editable = "../clients/python" }
 dependencies = [
     { name = "couchbase" },
+    { name = "langchain-core" },
+    { name = "langchain-openai" },
     { name = "pydantic" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "couchbase", specifier = ">=4.4.0" },
+    { name = "langchain-core", specifier = ">=0.1.0" },
+    { name = "langchain-openai", specifier = ">=0.1.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
 ]
 
