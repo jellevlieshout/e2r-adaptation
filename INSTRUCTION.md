@@ -1,6 +1,6 @@
 You are building the system described in PLAN.md. We build this system piece-by-piece by creating and updating to-dos in TODOS.md. 
 
-If TODOS.md is empty, go through PLAN.md and create todos for the next logical step in building the system. 
+If TODOS.md is empty or all TODOS are finished, go through PLAN.md and create todos for the next logical step in building the system. 
 
 If TODOS.md is not empty, read the first todo and implement it. You are free to update and/or add TODOS.md as you go. 
 
