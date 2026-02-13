@@ -58,3 +58,25 @@ Refactor the direct usage of `ChatOpenAI` and `OpenRouter` configuration in `nod
 
 - [x] **5a.** Created `clients/python/clients/openrouter/client.py` to encapsulate OpenRouter API interactions.
 - [x] **5b.** Updated `services/api/src/workflows/nodes.py` to use the new `OpenRouterClient`.
+
+## Step 6: Frontend Run Overview & Inspection (PLAN §12)
+
+Implement the run overview dashboard, example inspection, and comparison interface.
+
+- [x] **6a.** Backend: Implement `GET /runs`, `GET /runs/{run_id}`, and `GET /runs/{run_id}/predictions`.
+- [x] **6b.** Frontend: Create API client and Run List page (`/runs`).
+- [x] **6c.** Frontend: Implement Example Inspection page (`/runs/:runId`).
+- [x] **6d.** Frontend: Implement visual span comparison.
+- [x] **6e.** Verify: Run a new experiment and inspect results in UI.
+
+## Step 7: Frontend Refactor & Harmonization
+
+Refactor frontend to use TanStack Query and harmonize navigation.
+
+- [x] **7a.** Create `AppSidebar` component using shadcn/ui sidebar.
+- [x] **7b.** Refactor `RunsPage` to use `useRuns` hook.
+- [x] **7c.** Refactor `RunDetailsPage` to use `useRun` and `usePredictions` hooks.
+- [x] **7d.** Implement a global layout with the new sidebar. Make sure all existing pages are accessible. 
+- [x] **7e.** Verify all pages are accessible and data loading works.
+- [x] **7f.** Audit: Review all frontend components for MVP separation and <300 lines rule. Refactor if needed.
+- [ ] **7g.** Refactor `services/frontend/app/components/ui/chart.tsx` (357 lines) to reduce file size.

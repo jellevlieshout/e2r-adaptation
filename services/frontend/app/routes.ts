@@ -12,4 +12,6 @@ export default [
   route("metaphors", "routes/metaphors.tsx"),
   route("detect", "routes/detect.tsx"),
   route("semeval", "routes/semeval.tsx"),
+  route("runs", "routes/runs.tsx"),
+  route("runs/:runId", "routes/runs.$runId.tsx"),
 ] satisfies RouteConfig;

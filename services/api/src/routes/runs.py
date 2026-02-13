@@ -180,3 +180,48 @@ async def create_run(request: RunRequest, background_tasks: BackgroundTasks):
         status=RunStatus.RUNNING,
         message="Run initiated successfully"
     )
+
+
+@router.get("", response_model=List[RunData])
+async def list_runs(limit: int = 50, offset: int = 0):
+    """
+    List all experiment runs.
+    """
+    ks = get_keyspace("runs", bucket_name="main")
+    query = f"""
+        SELECT VALUE t FROM ${{keyspace}} t
+        ORDER BY t.created_at DESC
+        LIMIT {limit} OFFSET {offset}
+    """
+    
+    rows = ks.query(query)
+    return [RunData(**row) for row in rows]
+
+
+@router.get("/{run_id}", response_model=RunData)
+async def get_run(run_id: str):
+    """
+    Get a specific run by ID.
+    """
+    ks = get_keyspace("runs", bucket_name="main")
+    try:
+        result = ks.get_collection().get(f"run::{run_id}")
+        return RunData(**result.content_as[dict])
+    except Exception:
+        raise HTTPException(status_code=404, detail=f"Run {run_id} not found")
+
+
+@router.get("/{run_id}/predictions", response_model=List[PredictionData])
+async def get_run_predictions(run_id: str):
+    """
+    Get all predictions for a specific run.
+    """
+    ks = get_keyspace("predictions", bucket_name="main")
+    query = """
+        SELECT VALUE t FROM ${keyspace} t
+        WHERE t.run_id = $1
+        ORDER BY t.example_id
+    """
+    
+    rows = ks.query(query, positional_parameters=[run_id])
+    return [PredictionData(**row) for row in rows]

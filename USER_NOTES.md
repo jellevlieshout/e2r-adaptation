@@ -24,3 +24,28 @@ The project currently relies on free-tier models on OpenRouter. Recommended mode
 | Meta | Llama 3.2 3B Instruct | `meta-llama/llama-3.2-3b-instruct:free` | 131k | Multilingual, fast. |
 
 **Note**: Always verify the exact model ID on OpenRouter as they change frequently.
+
+## Frontend Data Flow & State Management
+
+**Architecture Pattern**:
+1. **Page/Component**: Renders UI, uses Custom Hook.
+2. **Custom Hook** (`hooks/use-*.ts`): Wraps TanStack Query `useQuery`/`useMutation`.
+3. **TanStack Query**: Handles caching, loading states, refetching.
+4. **API Client** (`lib/api.ts`): Typed functions making `fetch` calls.
+5. **Backend API**: Processes request.
+
+**Rules**:
+- Do NOT use `useEffect` for data fetching. Use `useQuery`.
+- Do NOT make `fetch` calls directly in components.
+- Always type API responses with TypeScript interfaces in `lib/api.ts`.
+
+## Component Architecture & Best Practices
+
+- **Examples**:
+  - `View`: Renders UI (JSX).
+  - `Presenter`: Custom hook handling logic/data.
+  - `Model`: TypeScript interfaces/types.
+- **Encapsulation**: Components should be small and focused.
+- **MVP Separation**: Separate logic (Presenter) from UI (View).
+- **Size Limit**: Files > 300 lines **MUST** be refactored into sub-components.
+- **Audit**: If you encounter a file violating these rules, add a TODO to TODOS.md to refactor it.
