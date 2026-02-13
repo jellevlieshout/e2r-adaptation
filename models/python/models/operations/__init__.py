@@ -9,6 +9,11 @@ from models.operations.evaluation import (
     span_iou,
 )
 from models.operations.registry import METRIC_REGISTRY
+from models.operations.ingestion import (
+    parse_vu_sentence,
+    parse_semeval_sample,
+    build_semeval_replacement_map,
+)
 
 __all__ = [
     "normalize_spans",
@@ -18,4 +23,7 @@ __all__ = [
     "compute_bleu",
     "span_iou",
     "METRIC_REGISTRY",
+    "parse_vu_sentence",
+    "parse_semeval_sample",
+    "build_semeval_replacement_map",
 ]

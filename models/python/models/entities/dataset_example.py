@@ -3,11 +3,12 @@ Dataset Example entity — PLAN.md §5.1.
 Key format: dataset::{dataset_name}::{example_id}
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, ClassVar
 from datetime import datetime
 from pydantic import BaseModel, Field, model_validator
 
 from models.types.shared import DatasetType, PhenomenonType, DetectionResult
+from clients.couchbase.couchbase import BaseModelCouchbase
 
 
 class DatasetExampleData(BaseModel):
@@ -34,11 +35,11 @@ class DatasetExampleData(BaseModel):
                 raise ValueError("VU Amsterdam examples must have gold_replacement = null")
 
         elif self.dataset == DatasetType.SEMEVAL:
-            # SemEval: spans required, gold_replacement required
-            if self.gold_detection is None or not self.gold_detection.spans:
-                raise ValueError("SemEval examples require gold_detection.spans")
-            if self.gold_replacement is None:
-                raise ValueError("SemEval examples require gold_replacement")
+            # SemEval: gold_detection required but spans may be empty if MWE
+            # not found verbatim in text. gold_replacement is null because
+            # SubTask B replacements are stored in metadata instead.
+            if self.gold_detection is None:
+                raise ValueError("SemEval examples require gold_detection")
 
         # Manual: gold fields optional — no validation needed
         return self
@@ -46,3 +47,24 @@ class DatasetExampleData(BaseModel):
     def document_key(self) -> str:
         """Generate the Couchbase document key."""
         return f"dataset::{self.dataset.value}::{self.example_id}"
+
+
+class DatasetExample(BaseModelCouchbase[DatasetExampleData]):
+    """Couchbase document wrapper for dataset examples."""
+    _collection_name: ClassVar[str] = "datasets"
+    _bucket_name: ClassVar[str] = "main"
+
+    @classmethod
+    def get_keyspace(cls):
+        """Override to use the 'main' bucket where experiment collections live."""
+        from clients.couchbase.couchbase import get_keyspace as _get_keyspace
+        return _get_keyspace(cls._collection_name, bucket_name=cls._bucket_name)
+
+    @classmethod
+    def create_with_key(cls, data: DatasetExampleData) -> "DatasetExample":
+        """Create or upsert a document using the data's document_key()."""
+        key = data.document_key()
+        collection = cls.get_keyspace().get_collection()
+        collection.upsert(key, data.model_dump(mode="json"))
+        return cls(id=key, data=data)
+

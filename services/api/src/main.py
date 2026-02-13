@@ -8,6 +8,7 @@ from routes.adaptation import router as adaptation_router
 from routes.vuamc import router as vuamc_router
 from routes.detection import router as detection_router
 from routes.semeval import router as semeval_router
+from routes.datasets import router as datasets_router
 import conf
 from init import init, deinit
 
@@ -44,6 +45,7 @@ app.include_router(adaptation_router)
 app.include_router(vuamc_router)
 app.include_router(detection_router)
 app.include_router(semeval_router)
+app.include_router(datasets_router)
 
 app.add_middleware(
     CORSMiddleware,

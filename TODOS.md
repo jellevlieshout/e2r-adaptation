@@ -22,3 +22,19 @@ Implement metric computation functions and the metric registry.
 - [x] **2c.** Updated `models/python/models/operations/__init__.py` to re-export all new functions and registry.
 - [x] **2d.** Added `scikit-learn>=1.4.0` and `nltk>=3.8.0` to `models/python/pyproject.toml`. Installed in API container via `uv sync`.
 - [x] **2e.** Verified in API container: all imports work, all metrics produce correct values (token F1 perfect=1.0/none=0.0, span F1 IoU threshold at 0.5 works correctly, sentence F1 binary classification correct, BLEU identical=1.0/different≈0.087/null=0.0, IoU helper correct).
+
+## Step 3: Dataset Ingestion (PLAN §9) ✅
+
+Parse VU Amsterdam and SemEval datasets into `DatasetExampleData` and store in Couchbase.
+
+- [x] **3a.** Created `models/python/models/operations/ingestion.py`
+  - `parse_vu_sentence`: VU tokens → `DatasetExampleData` (using token_labels, character-offset spans).
+  - `parse_semeval_sample`: SemEval Task A → `DatasetExampleData` (MWE position → spans).
+  - `build_semeval_replacement_map`: Joins Task A samples with Task B sentence-level paraphrases, stored in `metadata.gold_sentence_replacement`.
+- [x] **3b.** Added `DatasetExample` Couchbase model in `models/python/models/entities/dataset_example.py` (extends `BaseModelCouchbase`, explicitly uses `main` bucket).
+- [x] **3c.** Created API route `POST /datasets/ingest` in `services/api/src/routes/datasets.py` calling ingestion ops and `DatasetExample.create_with_key`.
+- [x] **3d.** Registered route in `main.py`.
+- [x] **3e.** Verified:
+  - Fixed Couchbase credentials (`user`/`password`) and bucket name (`main`).
+  - Ingested 16,202 VU Amsterdam sentences and 3,487 SemEval samples.
+  - Verified document structure and metadata enrichment via Couchbase query inspection.
