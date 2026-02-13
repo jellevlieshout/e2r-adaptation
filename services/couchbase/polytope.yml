@@ -1,0 +1,11 @@
+tools:
+  couchbase:
+    info: "Runs the Couchbase cluster"
+    await: [set-values-and-secrets]
+    run:
+      - tool: polytope/couchbase
+        args:
+          image: couchbase:enterprise-7.6.6
+          await: false
+          create: when-missing
+          data-volume: { id: couchbase-data, type: volume, scope: project }
