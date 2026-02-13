@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { format } from "date-fns";
-import { useRun, useRunPredictions } from "~/hooks/use-runs";
+import type { PredictionData } from "~/lib/api";
+import { useRun, useRunPredictions, useRunMetrics } from "~/hooks/use-runs";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
@@ -21,6 +22,7 @@ export default function RunDetailsPage() {
     const { runId } = useParams();
     const { data: run, isLoading: isLoadingRun, error: runError, refetch: refetchRun } = useRun(runId);
     const { data: predictions, isLoading: isLoadingPreds, error: predsError, refetch: refetchPreds } = useRunPredictions(runId);
+    const { data: metricsData, isLoading: isLoadingMetrics, refetch: refetchMetrics } = useRunMetrics(runId);
 
     const isLoading = isLoadingRun || isLoadingPreds;
     const error = runError || predsError;
@@ -28,6 +30,7 @@ export default function RunDetailsPage() {
     const handleRefresh = () => {
         refetchRun();
         refetchPreds();
+        refetchMetrics();
     };
 
     const getStatusColor = (status: string) => {
@@ -127,7 +130,7 @@ export default function RunDetailsPage() {
             <Tabs defaultValue="predictions" className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="predictions">Predictions</TabsTrigger>
-                    <TabsTrigger value="metrics">Metrics (Coming Soon)</TabsTrigger>
+                    <TabsTrigger value="metrics">Metrics</TabsTrigger>
                     <TabsTrigger value="json">Raw JSON</TabsTrigger>
                 </TabsList>
 
@@ -143,7 +146,7 @@ export default function RunDetailsPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-6">
-                                {(predictions || []).map((pred) => (
+                                {(predictions || []).map((pred: PredictionData) => (
                                     <div
                                         key={pred.example_id}
                                         className="border rounded-md p-4 space-y-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -200,8 +203,40 @@ export default function RunDetailsPage() {
 
                 <TabsContent value="metrics">
                     <Card>
+                        <CardHeader>
+                            <CardTitle>Evaluation Metrics</CardTitle>
+                            <CardDescription>
+                                Performance metrics based on {metricsData?.examples_evaluated || 0} evaluated examples.
+                            </CardDescription>
+                        </CardHeader>
                         <CardContent className="pt-6">
-                            <p>Metrics visualization will be implemented in Step 8.</p>
+                            {isLoadingMetrics ? (
+                                <Skeleton className="h-24 w-full" />
+                            ) : !metricsData || Object.keys(metricsData.metrics).length === 0 ? (
+                                <div className="text-center text-gray-500 py-8">
+                                    No metrics available. Ensure the run is completed.
+                                </div>
+                            ) : (
+                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                                    {Object.entries(metricsData.metrics as Record<string, number>).map(([key, value]) => (
+                                        <Card key={key}>
+                                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                                <CardTitle className="text-sm font-medium capitalize">
+                                                    {key.replace(/_/g, " ")}
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="text-2xl font-bold">
+                                                    {(value * 100).toFixed(1)}%
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {value.toFixed(4)}
+                                                </p>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>

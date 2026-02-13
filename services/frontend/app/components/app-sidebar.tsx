@@ -1,4 +1,4 @@
-import { Home, List, Search, Settings, Wand2, FlaskConical } from "lucide-react";
+import { Home, List, Search, Wand2, FlaskConical } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import {
     Sidebar,
@@ -38,11 +38,7 @@ const items = [
         url: "/semeval", // Assuming this route exists or will exist
         icon: FlaskConical,
     },
-    {
-        title: "Settings",
-        url: "/settings",
-        icon: Settings,
-    },
+
 ];
 
 export function AppSidebar() {

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchRuns, fetchRun, fetchPredictions, type RunData, type PredictionData } from "~/lib/api";
+import { fetchRuns, fetchRun, fetchPredictions, fetchRunMetrics, type RunData, type PredictionData, type RunMetrics } from "~/lib/api";
 
 export function useRuns(limit: number = 50, offset: number = 0) {
     return useQuery<RunData[]>({
@@ -23,3 +23,12 @@ export function useRunPredictions(runId: string | undefined) {
         enabled: !!runId,
     });
 }
+
+export function useRunMetrics(runId: string | undefined) {
+    return useQuery<RunMetrics>({
+        queryKey: ["metrics", runId],
+        queryFn: () => fetchRunMetrics(runId!),
+        enabled: !!runId,
+    });
+}
+// Forced HMR update

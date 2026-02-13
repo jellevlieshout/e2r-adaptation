@@ -49,3 +49,6 @@ The project currently relies on free-tier models on OpenRouter. Recommended mode
 - **MVP Separation**: Separate logic (Presenter) from UI (View).
 - **Size Limit**: Files > 300 lines **MUST** be refactored into sub-components.
 - **Audit**: If you encounter a file violating these rules, add a TODO to TODOS.md to refactor it.
+
+## Verification
+- **Frontend Verification**: Front-end fixes or changes should always be verified in the browser by the agent. The front end is running at http://localhost:51732.

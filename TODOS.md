@@ -79,4 +79,15 @@ Refactor frontend to use TanStack Query and harmonize navigation.
 - [x] **7d.** Implement a global layout with the new sidebar. Make sure all existing pages are accessible. 
 - [x] **7e.** Verify all pages are accessible and data loading works.
 - [x] **7f.** Audit: Review all frontend components for MVP separation and <300 lines rule. Refactor if needed.
+- [x] **7g.** Refactored `services/frontend/app/components/ui/chart.tsx` into `chart/` directory with separate component files (`chart-container.tsx`, `chart-tooltip.tsx`, `chart-legend.tsx`, `chart-context.tsx`, `chart-utils.ts`). Verified with `bun run typecheck`.
 - [ ] **7g.** Refactor `services/frontend/app/components/ui/chart.tsx` (357 lines) to reduce file size.
+- [x] **7h.** Inspect the app at http://localhost:51732 to identify missing design/functionality features.
+
+## Step 8: Bug Fixes & Improvements
+
+- [x] **8a.** Fix `TypeError: Cannot read properties of null (reading 'useContext')` on initial load. (Could not reproduce in browser; likely transient or fixed by rebuild).
+- [x] **8b.** Investigate why runs show "1 failed" / "Failed: 1" despite status "completed". (Caused by 429 Rate Limit; logic updated to set run status to FAILED if all examples fail).
+- [x] **8c.** Fix 404 error on `/settings` (or remove link).
+- [x] **8d.** Implement "Metrics" tab in Run Details page (currently "Coming Soon").
+- [ ] **8e.** Improve empty states for "Recent Adaptations" and SemEval tasks.
+- [ ] **8f.** Harmonize home page navigation: remove redundant "dashboard inside a dashboard" in `home.tsx` / `AppLayout`.

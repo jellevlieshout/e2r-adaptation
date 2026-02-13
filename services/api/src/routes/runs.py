@@ -12,6 +12,12 @@ from models.entities.run import RunData, RunStatus
 from models.types.shared import DatasetType, PhenomenonType, TaskType
 from workflows.graph import get_graph
 from workflows.state import GraphState
+from models.operations.evaluation import (
+    compute_f1_token,
+    compute_f1_span,
+    compute_f1_sentence,
+    compute_bleu
+)
 from clients.couchbase.couchbase import get_keyspace, Keyspace
 
 logger = logging.getLogger(__name__)
@@ -35,6 +41,12 @@ class RunResponse(BaseModel):
     run_id: str
     status: RunStatus
     message: str
+
+
+class RunMetricsResponse(BaseModel):
+    run_id: str
+    metrics: dict[str, float]
+    examples_evaluated: int
 
 
 def _execute_run(run_data: RunData, limit: Optional[int] = None):
@@ -133,7 +145,11 @@ def _execute_run(run_data: RunData, limit: Optional[int] = None):
                 
         # Update final run status
         run_data.stats.total_examples = run_idx
-        run_data.status = RunStatus.COMPLETED
+        
+        if run_data.stats.completed == 0 and run_data.stats.failed > 0:
+             run_data.status = RunStatus.FAILED
+        else:
+             run_data.status = RunStatus.COMPLETED
         
         # Upsert final run document
         run_collection.upsert(run_data.document_key(), run_data.model_dump(mode="json"))
@@ -225,3 +241,115 @@ async def get_run_predictions(run_id: str):
     
     rows = ks.query(query, positional_parameters=[run_id])
     return [PredictionData(**row) for row in rows]
+
+
+@router.get("/{run_id}/metrics", response_model=RunMetricsResponse)
+async def get_run_metrics(run_id: str):
+    """
+    Compute and return evaluation metrics for a run.
+    """
+    # 1. Fetch Run
+    run_ks = get_keyspace("runs", bucket_name="main")
+    try:
+        run_res = run_ks.get_collection().get(f"run::{run_id}")
+        run_data = RunData(**run_res.content_as[dict])
+    except Exception:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # 2. Fetch Predictions
+    pred_ks = get_keyspace("predictions", bucket_name="main")
+    q_preds = "SELECT VALUE t FROM ${keyspace} t WHERE t.run_id = $1"
+    preds_rows = pred_ks.query(q_preds, positional_parameters=[run_id])
+    predictions = [PredictionData(**row) for row in preds_rows]
+
+    if not predictions:
+         return RunMetricsResponse(run_id=run_id, metrics={}, examples_evaluated=0)
+
+    # 3. Fetch Dataset Examples
+    ds_ks = DatasetExample.get_keyspace()
+    q_examples = "SELECT VALUE t FROM ${keyspace} t WHERE t.dataset = $1 AND t.phenomenon = $2"
+    ex_rows = ds_ks.query(
+        q_examples,
+        positional_parameters=[run_data.dataset.value, run_data.phenomenon.value]
+    )
+    # Map example_id -> example
+    examples_map = {row["example_id"]: DatasetExample(**row) for row in ex_rows}
+
+    # 4. Compute Metrics
+    # Aggregators
+    all_gold_tokens = []
+    all_pred_tokens = []
+    
+    span_metrics_sum = {"precision_span": 0.0, "recall_span": 0.0, "f1_span": 0.0}
+    sentence_metrics_sum = {"f1_sentence": 0.0}
+    bleu_sum = 0.0
+    
+    count_span = 0
+    count_sentence = 0
+    count_bleu = 0
+
+    for pred in predictions:
+        example = examples_map.get(pred.example_id)
+        if not example:
+            continue
+
+        # A. Token Level
+        # Note: We need token_labels. If not present (e.g. manual dataset might miss them), skip
+        if example.token_labels is not None and pred.predicted_detection and pred.predicted_detection.token_labels is not None:
+             # Ensure lengths match logic? 
+             # Ideally they should map 1:1. If lengths differ, we truncate or skip?
+             # For now assume they match or sklearn will complain/handle.
+             # Actually, if lengths differ, sklearn throws error.
+             # Let's simple append and hope for consistency, or skip if mismatch.
+             gl = example.token_labels
+             pl = pred.predicted_detection.token_labels
+             if len(gl) == len(pl):
+                 all_gold_tokens.extend(gl)
+                 all_pred_tokens.extend(pl)
+
+        # B. Span Level (Macro Average)
+        if pred.predicted_detection:
+            # Gold spans from example
+            res = compute_f1_span(example.spans, pred.predicted_detection.spans)
+            for k, v in res.items():
+                span_metrics_sum[k] += v
+            count_span += 1
+
+        # C. Sentence Level
+        if pred.predicted_detection:
+             res = compute_f1_sentence(example.spans, pred.predicted_detection.spans)
+             sentence_metrics_sum["f1_sentence"] += res["f1_sentence"]
+             count_sentence += 1
+
+        # D. BLEU (Replacement)
+        if example.metadata and example.metadata.gold_sentence_replacement and pred.predicted_replacement:
+             res = compute_bleu(example.metadata.gold_sentence_replacement, pred.predicted_replacement)
+             bleu_sum += res["bleu"]
+             count_bleu += 1
+
+    # Finalize
+    metrics = {}
+    
+    # Token
+    if all_gold_tokens:
+        token_res = compute_f1_token(all_gold_tokens, all_pred_tokens)
+        metrics.update(token_res)
+
+    # Span (Macro)
+    if count_span > 0:
+        for k, v in span_metrics_sum.items():
+            metrics[k] = v / count_span
+
+    # Sentence (Macro)
+    if count_sentence > 0:
+        metrics["f1_sentence"] = sentence_metrics_sum["f1_sentence"] / count_sentence
+        
+    # BLEU
+    if count_bleu > 0:
+         metrics["bleu"] = bleu_sum / count_bleu
+
+    return RunMetricsResponse(
+        run_id=run_id,
+        metrics=metrics,
+        examples_evaluated=len(predictions)
+    )

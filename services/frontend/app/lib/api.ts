@@ -74,3 +74,17 @@ export async function fetchPredictions(runId: string): Promise<PredictionData[]>
     }
     return response.json();
 }
+
+export interface RunMetrics {
+    run_id: string;
+    metrics: Record<string, number>;
+    examples_evaluated: number;
+}
+
+export async function fetchRunMetrics(runId: string): Promise<RunMetrics> {
+    const response = await fetch(`${API_BASE_URL}/runs/${runId}/metrics`);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch metrics for run ${runId}: ${response.statusText}`);
+    }
+    return response.json();
+}
