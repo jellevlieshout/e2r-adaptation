@@ -46,9 +46,16 @@ tools:
             - { name: LANGCHAIN_API_KEY, value: pt.secret langchain-api-key }
             - { name: LANGCHAIN_TRACING_V2, value: "true" }
             - { name: LANGCHAIN_PROJECT, value: "e2r-adaptation" }
+            - { name: COUCHBASE_HOST, value: "#pt-clj (pt/value \"couchbase-host\")" }
+            - { name: COUCHBASE_USERNAME, value: "#pt-clj (pt/secret \"couchbase-username\")" }
+            - { name: COUCHBASE_PASSWORD, value: "#pt-clj (pt/secret \"couchbase-password\")" }
+            - { name: COUCHBASE_BUCKET, value: "#pt-clj (pt/value \"couchbase-bucket\")" }
+            - { name: COUCHBASE_PROTOCOL, value: "#pt-clj (pt/value \"couchbase-protocol\")" }
           mounts:
             - { path: /root/.cache/, source: { type: volume, scope: project, id: api-dependency-cache } }
             - { path: /clients/python, source: { type: repo, path: /clients/python, repo: "#pt-clj pt/module-project-ref" } }
             - { path: /models/python, source: { type: repo, path: /models/python, repo: "#pt-clj pt/module-project-ref" } }
             - { path: /datasets, source: { type: repo, path: /datasets, repo: "#pt-clj pt/module-project-ref" } }
+            - { path: /prompts, source: { type: repo, path: /prompts, repo: "#pt-clj pt/module-project-ref" } }
+            - { path: /scripts, source: { type: repo, path: /scripts, repo: "#pt-clj pt/module-project-ref" } }
 

@@ -5,6 +5,10 @@ description = "Internal shared clients"
 requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.0.0",
+
+    "couchbase>=4.4.0",
+    "langchain-openai>=0.1.0",
+    "langchain-core>=0.1.0",
 ]
 
 [build-system]

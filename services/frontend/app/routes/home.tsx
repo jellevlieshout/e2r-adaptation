@@ -3,6 +3,9 @@ import { useAdaptations } from "~/hooks/use-adaptations";
 import { AppLayout } from "~/components/layout/app-layout";
 import { ProtectedRoute } from "~/components/layout/protected-route";
 import { Button } from "~/components/ui/button";
+import { Wand2, List, BarChart3 } from "lucide-react";
+import { useDatasetStats } from "~/hooks/use-dataset-stats";
+import { Skeleton } from "~/components/ui/skeleton";
 import {
   Card,
   CardContent,
@@ -11,7 +14,6 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
-import { Skeleton } from "~/components/ui/skeleton";
 import type { Route } from "./+types/home";
 import type { FigurativeExpression } from "~/api/types";
 
@@ -19,7 +21,7 @@ import type { FigurativeExpression } from "~/api/types";
 // Meta
 // =============================================================================
 
-export function meta({}: Route.MetaArgs) {
+export function meta({ }: Route.MetaArgs) {
   return [
     { title: "Dashboard | E2R Expression Adapter" },
     {
@@ -64,6 +66,52 @@ function RecentActivitySkeleton() {
 }
 
 // =============================================================================
+// Dataset Stats component
+// =============================================================================
+
+function DatasetOverview() {
+  const { data: stats, isLoading } = useDatasetStats();
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!stats) return null;
+
+  const statItems = [
+    { label: "Total Examples", value: stats.total, color: "text-gray-600" },
+    { label: "VU Amsterdam", value: stats.vu_amsterdam, color: "text-blue-600" },
+    { label: "SemEval Tasks", value: stats.semeval, color: "text-purple-600" },
+    { label: "Manual Examples", value: stats.manual, color: "text-green-600" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {statItems.map((item) => (
+        <Card key={item.label} className="border-none shadow-sm bg-white dark:bg-gray-800">
+          <CardHeader className="p-4 pb-0">
+            <CardDescription className="text-xs uppercase tracking-wider font-semibold">
+              {item.label}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 pt-1">
+            <span className={`text-2xl font-bold ${item.color}`}>
+              {item.value.toLocaleString()}
+            </span>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// =============================================================================
 // Main Component
 // =============================================================================
 
@@ -75,35 +123,47 @@ function DashboardContent() {
     <AppLayout>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
             Dashboard
           </h1>
-          <p className="text-gray-500 mt-1">
+          <p className="text-muted-foreground">
             Simplify figurative language for better comprehension.
           </p>
         </div>
 
         {/* Quick Action */}
-        <Card>
+        <Card className="relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+            <Wand2 className="w-24 h-24" />
+          </div>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Adapt Text</CardTitle>
+            <CardTitle className="text-xl">Adapt Text</CardTitle>
             <CardDescription>
               Enter text containing idioms or conceptual metaphors to get a simplified version.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild>
-              <Link to="/adapt">Start Adapting</Link>
+            <Button asChild size="lg" className="gap-2">
+              <Link to="/adapt">
+                <Wand2 className="w-4 h-4" />
+                Start Adapting
+              </Link>
             </Button>
           </CardContent>
         </Card>
+
+        {/* Dataset Stats */}
+        <DatasetOverview />
 
         {/* Recent Activity */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Recent Adaptations</CardTitle>
+              <div>
+                <CardTitle className="text-lg">Recent Adaptations</CardTitle>
+                <CardDescription>Your recently processed expressions.</CardDescription>
+              </div>
               {recentAdaptations.length > 0 && (
                 <Button asChild variant="ghost" size="sm">
                   <Link to="/history">View All</Link>
@@ -115,9 +175,18 @@ function DashboardContent() {
             {isLoading ? (
               <RecentActivitySkeleton />
             ) : recentAdaptations.length === 0 ? (
-              <p className="text-gray-500 text-center py-6">
-                No adaptations yet. Start by adapting your first text.
-              </p>
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4 text-muted-foreground text-2xl">
+                  <List className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-medium">No adaptations yet</h3>
+                <p className="text-muted-foreground mb-6 max-w-xs mx-auto">
+                  Start by adapting your first text to see your history here.
+                </p>
+                <Button asChild variant="outline">
+                  <Link to="/adapt">Start Adapting</Link>
+                </Button>
+              </div>
             ) : (
               <div className="space-y-2">
                 {recentAdaptations.map((adaptation) => {

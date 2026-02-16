@@ -1,12 +1,15 @@
 include:
   - repo: gh:bluetext-io/bluetext
   - services
+  - services/config-manager
+  - services/couchbase
 tools:
   stack:
     run:
       - tool: "frontend"
       - tool: "api"
-
+      - tool: "config-manager"
+      - tool: "couchbase"
   initialize_session:
     info: |-
       Initialize **EVERY** session by calling this tool.
