@@ -278,13 +278,14 @@ async def get_run_metrics(run_id: str):
 
     # 3. Fetch Dataset Examples
     ds_ks = DatasetExample.get_keyspace()
-    q_examples = "SELECT VALUE t FROM ${keyspace} t WHERE t.dataset = $1 AND t.phenomenon = $2"
+    q_examples = "SELECT VALUE t FROM ${keyspace} t WHERE t.`dataset` = $1 AND t.`phenomenon` = $2"
     ex_rows = ds_ks.query(
         q_examples,
         positional_parameters=[run_data.dataset.value, run_data.phenomenon.value]
     )
-    # Map example_id -> example
-    examples_map = {row["example_id"]: DatasetExample(**row) for row in ex_rows}
+    # Map example_id -> example data
+    from models.entities.dataset_example import DatasetExampleData
+    examples_map = {row["example_id"]: DatasetExampleData(**row) for row in ex_rows}
 
     # 4. Compute Metrics
     # Aggregators
@@ -306,35 +307,30 @@ async def get_run_metrics(run_id: str):
 
         # A. Token Level
         # Note: We need token_labels. If not present (e.g. manual dataset might miss them), skip
-        if example.token_labels is not None and pred.predicted_detection and pred.predicted_detection.token_labels is not None:
-             # Ensure lengths match logic? 
-             # Ideally they should map 1:1. If lengths differ, we truncate or skip?
-             # For now assume they match or sklearn will complain/handle.
-             # Actually, if lengths differ, sklearn throws error.
-             # Let's simple append and hope for consistency, or skip if mismatch.
-             gl = example.token_labels
+        if example.gold_detection and example.gold_detection.token_labels is not None and pred.predicted_detection and pred.predicted_detection.token_labels is not None:
+             gl = example.gold_detection.token_labels
              pl = pred.predicted_detection.token_labels
              if len(gl) == len(pl):
                  all_gold_tokens.extend(gl)
                  all_pred_tokens.extend(pl)
 
         # B. Span Level (Macro Average)
-        if pred.predicted_detection:
+        if pred.predicted_detection and example.gold_detection:
             # Gold spans from example
-            res = compute_f1_span(example.spans, pred.predicted_detection.spans)
+            res = compute_f1_span(example.gold_detection.spans, pred.predicted_detection.spans)
             for k, v in res.items():
                 span_metrics_sum[k] += v
             count_span += 1
 
         # C. Sentence Level
-        if pred.predicted_detection:
-             res = compute_f1_sentence(example.spans, pred.predicted_detection.spans)
+        if pred.predicted_detection and example.gold_detection:
+             res = compute_f1_sentence(example.gold_detection.spans, pred.predicted_detection.spans)
              sentence_metrics_sum["f1_sentence"] += res["f1_sentence"]
              count_sentence += 1
 
         # D. BLEU (Replacement)
-        if example.metadata and example.metadata.gold_sentence_replacement and pred.predicted_replacement:
-             res = compute_bleu(example.metadata.gold_sentence_replacement, pred.predicted_replacement)
+        if example.metadata and example.metadata.get("gold_sentence_replacement") and pred.predicted_replacement:
+             res = compute_bleu(example.metadata.get("gold_sentence_replacement"), pred.predicted_replacement)
              bleu_sum += res["bleu"]
              count_bleu += 1
 

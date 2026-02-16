@@ -31,4 +31,29 @@ export function useRunMetrics(runId: string | undefined) {
         enabled: !!runId,
     });
 }
-// Forced HMR update
+
+export function useCompareRuns(runIds: string[]) {
+    const runsQuery = useQuery<RunData[]>({
+        queryKey: ["runs", "comparison", runIds],
+        queryFn: async () => {
+            const allRuns = await fetchRuns(100, 0);
+            return allRuns.filter(r => runIds.includes(r.run_id));
+        },
+        enabled: runIds.length > 0,
+    });
+
+    const metricsQuery = useQuery<RunMetrics[]>({
+        queryKey: ["metrics", "comparison", runIds],
+        queryFn: async () => {
+            return Promise.all(runIds.map(id => fetchRunMetrics(id)));
+        },
+        enabled: runIds.length > 0,
+    });
+
+    return {
+        runs: runsQuery.data || [],
+        metrics: metricsQuery.data || [],
+        isLoading: runsQuery.isLoading || metricsQuery.isLoading,
+        error: runsQuery.error || metricsQuery.error,
+    };
+}

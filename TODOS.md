@@ -110,13 +110,15 @@ Implement external prompt management and hashing.
 - [x] **10c.** Captured all reproducibility fields (`temperature`, `top_p`, `prompt_hash`) in `RunData`.
 - [x] **10d.** Verified: Hashing logic confirmed with test script; prompts loaded dynamically in `nodes.py`.
 
-## Step 11: Run Comparison (PLAN §12.3)
+## Step 11: Run Comparison (PLAN §12.3) ✅
 
-Implement multi-run comparison in the frontend.
+Implement multi-run comparison in the frontend and resolve backend metric extraction issues.
 
-- [ ] **11a.** Frontend: Allow selecting multiple runs from the `RunsPage`.
-- [ ] **11b.** Frontend: Implement comparison view with metrics table and bar charts.
-- [ ] **11c.** Verify: Select two runs and compare their metrics visually.
+- [x] **11a.** Frontend: Allow selecting multiple runs from the `RunsPage`.
+- [x] **11b.** Frontend: Implement comparison view with metrics table and bar charts using TanStack Query and Recharts.
+- [x] **11c.** Backend: Fixed `ParsingFailedException` by escaping Couchbase reserved words (`dataset`, `phenomenon`) and corrected Pydantic schema access in `get_run_metrics`.
+- [x] **11d.** Infrastructure: Implemented Couchbase health checks to verify 'main' bucket connectivity.
+- [x] **11e.** Verified: Select multiple runs and compare their metrics visually; resolved metric fetching issues through Couchbase query and schema fixes.
 ## Step 12: Data Re-ingestion & Final Verification ✅
 
 Re-populate Couchbase with datasets after the cluster restart and verify the full experiment workflow.

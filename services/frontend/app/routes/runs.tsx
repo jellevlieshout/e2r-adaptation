@@ -12,9 +12,28 @@ import {
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
+import { Checkbox } from "~/components/ui/checkbox";
+import { useState } from "react";
+import { useNavigate } from "react-router";
 
 export default function RunsPage() {
     const { data: runs, isLoading, error, refetch } = useRuns();
+    const [selectedRuns, setSelectedRuns] = useState<string[]>([]);
+    const navigate = useNavigate();
+
+    const toggleRunSelection = (runId: string) => {
+        setSelectedRuns((prev) =>
+            prev.includes(runId)
+                ? prev.filter((id) => id !== runId)
+                : [...prev, runId]
+        );
+    };
+
+    const handleCompare = () => {
+        const params = new URLSearchParams();
+        selectedRuns.forEach((id) => params.append("runId", id));
+        navigate(`/runs/compare?${params.toString()}`);
+    };
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -33,9 +52,16 @@ export default function RunsPage() {
         <div className="container mx-auto py-10 space-y-8">
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold tracking-tight">Experiment Runs</h1>
-                <Button onClick={() => refetch()} variant="outline">
-                    Refresh
-                </Button>
+                <div className="flex gap-2">
+                    {selectedRuns.length > 0 && (
+                        <Button onClick={handleCompare} variant="default">
+                            Compare ({selectedRuns.length})
+                        </Button>
+                    )}
+                    <Button onClick={() => refetch()} variant="outline">
+                        Refresh
+                    </Button>
+                </div>
             </div>
 
             <Card>
@@ -55,6 +81,7 @@ export default function RunsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
+                                    <TableHead className="w-[50px]"></TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Run ID</TableHead>
                                     <TableHead>Dataset</TableHead>
@@ -68,13 +95,21 @@ export default function RunsPage() {
                             <TableBody>
                                 {(!runs || runs.length === 0) ? (
                                     <TableRow>
-                                        <TableCell colSpan={8} className="text-center h-24">
+                                        <TableCell colSpan={9} className="text-center h-24">
                                             No runs found. Start a new experiment to see results here.
                                         </TableCell>
                                     </TableRow>
                                 ) : (
                                     runs.map((run) => (
                                         <TableRow key={run.run_id}>
+                                            <TableCell>
+                                                <Checkbox
+                                                    checked={selectedRuns.includes(run.run_id)}
+                                                    onCheckedChange={() => toggleRunSelection(run.run_id)}
+                                                // Allow selecting any run for now to help testing if none are completed
+                                                // disabled={run.status !== "completed"}
+                                                />
+                                            </TableCell>
                                             <TableCell>
                                                 <Badge className={`${getStatusColor(run.status)} text-white border-0`}>
                                                     {run.status}
