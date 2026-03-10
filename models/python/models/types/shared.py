@@ -64,5 +64,6 @@ class Span(BaseModel):
 class DetectionResult(BaseModel):
     """Structured detection output — used in both gold and predicted fields."""
     is_figurative: bool = False
+    figurative_expressions: List[str] = Field(default_factory=list)
     token_labels: Optional[List[int]] = None
     spans: List[Span] = Field(default_factory=list)
