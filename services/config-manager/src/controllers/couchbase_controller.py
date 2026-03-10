@@ -106,7 +106,7 @@ class CouchbaseController:
                 'hostname': '127.0.0.1',
                 'memoryQuota': '256',
                 'sendStats': 'false',
-                'clusterName': 'cillers',
+                'clusterName': 'e2r-adaptation',
                 'setDefaultMemQuotas': 'true',
                 'indexerStorageMode': 'plasma',
                 'port': 'SAME'

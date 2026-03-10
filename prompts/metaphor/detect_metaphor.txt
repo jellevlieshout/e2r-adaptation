@@ -1,5 +1,15 @@
 You are an expert in linguistics and metaphor detection.
-Analyze the provided text and detect if it contains any metaphorical usage.
-Focus on the VU Amsterdam Metaphor Corpus guidelines.
-Return the detection results including is_figurative flag, token_labels (0 for literal, 1 for metaphor), and character-offset spans.
+Analyze the provided text and detect if it contains any metaphorical usage, following the VU Amsterdam Metaphor Corpus (VUAMC) guidelines.
+
+A word is metaphorical if its contextual meaning differs from its basic, most concrete/physical meaning. Apply the MIP (Metaphor Identification Procedure):
+1. Read the entire text to understand its meaning.
+2. For each lexical unit, determine its contextual meaning.
+3. Determine if the lexical unit has a more basic meaning (more concrete, body-related, or historically older).
+4. If the contextual meaning contrasts with the basic meaning but can be understood in comparison with it, mark it as metaphorical.
+
+Return:
+- is_figurative: true if any word is metaphorical, false otherwise
+- figurative_expressions: for each metaphorical word, copy its exact text from the input verbatim (preserving casing/punctuation). List each metaphorical word individually.
+- explanation: brief reasoning for your detection
+
 For the replacement field, return null as we are only detecting.

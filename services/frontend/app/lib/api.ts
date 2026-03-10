@@ -16,6 +16,8 @@ export interface RunData {
     temperature: number;
     top_p: number;
     prompt_version: string;
+    prompt_hash: string;
+    prompt_text: string;
     created_at: string;
     status: RunStatus;
     stats: RunStats;
@@ -28,6 +30,7 @@ export interface Span {
 
 export interface DetectionResult {
     is_figurative: boolean;
+    figurative_expressions?: string[];
     token_labels?: number[];
     spans: Span[];
 }
@@ -47,25 +50,14 @@ export interface PredictionData {
     token_usage?: Record<string, any>;
     confidence?: number;
     created_at: string;
-}
-
-export interface ExampleData {
-    dataset: string;
-    phenomenon: string;
-    example_id: string;
-    text: string;
-    tokens?: string[];
-    gold_detection?: DetectionResult;
+    gold_detection?: DetectionResult | null;
     gold_replacement?: string | null;
-    metadata: Record<string, any>;
-    created_at: string;
 }
 
-export interface DatasetStats {
-    total: number;
-    vu_amsterdam: number;
-    semeval: number;
-    manual: number;
+export interface RunMetrics {
+    run_id: string;
+    metrics: Record<string, number>;
+    examples_evaluated: number;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3030";
@@ -86,66 +78,19 @@ export async function fetchRun(runId: string): Promise<RunData> {
     return response.json();
 }
 
-export async function fetchPredictions(runId: string): Promise<PredictionData[]> {
-    const response = await fetch(`${API_BASE_URL}/runs/${runId}/predictions`);
+export async function fetchPredictions(runId: string, includeGold = false): Promise<PredictionData[]> {
+    const params = includeGold ? "?include_gold=true" : "";
+    const response = await fetch(`${API_BASE_URL}/runs/${runId}/predictions${params}`);
     if (!response.ok) {
         throw new Error(`Failed to fetch predictions for run ${runId}: ${response.statusText}`);
     }
     return response.json();
 }
 
-export interface RunMetrics {
-    run_id: string;
-    metrics: Record<string, number>;
-    examples_evaluated: number;
-}
-
 export async function fetchRunMetrics(runId: string): Promise<RunMetrics> {
     const response = await fetch(`${API_BASE_URL}/runs/${runId}/metrics`);
     if (!response.ok) {
         throw new Error(`Failed to fetch metrics for run ${runId}: ${response.statusText}`);
-    }
-    return response.json();
-}
-
-export async function createManualExample(data: {
-    text: string;
-    phenomenon: string;
-    example_id?: string;
-}): Promise<ExampleData> {
-    const response = await fetch(`${API_BASE_URL}/manual`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-        throw new Error(`Failed to create manual example: ${response.statusText}`);
-    }
-    return response.json();
-}
-
-export async function annotateManualExample(
-    exampleId: string,
-    annotation: {
-        gold_detection?: Partial<DetectionResult>;
-        gold_replacement?: string;
-    }
-): Promise<ExampleData> {
-    const response = await fetch(`${API_BASE_URL}/manual/${exampleId}/annotate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(annotation),
-    });
-    if (!response.ok) {
-        throw new Error(`Failed to annotate manual example ${exampleId}: ${response.statusText}`);
-    }
-    return response.json();
-}
-
-export async function fetchDatasetStats(): Promise<DatasetStats> {
-    const response = await fetch(`${API_BASE_URL}/datasets/stats`);
-    if (!response.ok) {
-        throw new Error(`Failed to fetch dataset stats: ${response.statusText}`);
     }
     return response.json();
 }

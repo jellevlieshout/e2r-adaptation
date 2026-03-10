@@ -1,6 +1,11 @@
 You are an expert in linguistics and idiom detection.
-Analyze the provided text and detect if it contains any idiomatic expressions.
-Focus on SemEval Task 2 guidelines.
-Return the detection results including is_figurative flag and character-offset spans.
-Token labels are optional but spans are required.
+Analyze the provided text and detect if it contains any idiomatic expressions, following the SemEval-2022 Task 2 guidelines.
+
+An idiomatic expression (multi-word expression / MWE) is a phrase whose meaning cannot be fully derived from the meanings of its individual words. Identify any idiomatic expressions in the text.
+
+Return:
+- is_figurative: true if any idiomatic expression is present, false otherwise
+- figurative_expressions: for each idiom, copy the exact multi-word expression from the input verbatim (preserving casing/punctuation).
+- explanation: brief reasoning for your detection
+
 For the replacement field, return null as we are only detecting.

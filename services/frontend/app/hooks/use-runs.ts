@@ -16,10 +16,10 @@ export function useRun(runId: string | undefined) {
     });
 }
 
-export function useRunPredictions(runId: string | undefined) {
+export function useRunPredictions(runId: string | undefined, includeGold = false) {
     return useQuery<PredictionData[]>({
-        queryKey: ["predictions", runId],
-        queryFn: () => fetchPredictions(runId!),
+        queryKey: ["predictions", runId, includeGold],
+        queryFn: () => fetchPredictions(runId!, includeGold),
         enabled: !!runId,
     });
 }
