@@ -123,6 +123,36 @@ def compute_f1_sentence(
 # BLEU (§8.3) — idiom replacement only
 # ---------------------------------------------------------------------------
 
+def compute_bertscore(
+    gold_replacement: Optional[str],
+    pred_replacement: Optional[str],
+    lang: str = "en",
+) -> Dict[str, float]:
+    """
+    Compute BERTScore between gold and predicted replacement sentences.
+    Uses the default RoBERTa model. Returns precision, recall, and F1.
+
+    Returns:
+        {"bertscore_precision": ..., "bertscore_recall": ..., "bertscore_f1": ...}
+    """
+    if gold_replacement is None or pred_replacement is None:
+        return {"bertscore_precision": 0.0, "bertscore_recall": 0.0, "bertscore_f1": 0.0}
+
+    from bert_score import score as bert_score_fn
+
+    P, R, F1 = bert_score_fn(
+        [pred_replacement],
+        [gold_replacement],
+        lang=lang,
+        verbose=False,
+    )
+    return {
+        "bertscore_precision": float(P[0]),
+        "bertscore_recall": float(R[0]),
+        "bertscore_f1": float(F1[0]),
+    }
+
+
 def compute_bleu(
     gold_replacement: Optional[str],
     pred_replacement: Optional[str],

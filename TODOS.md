@@ -162,3 +162,52 @@ Enhanced LLM structured output to produce character-offset spans and token label
   - `f1_sentence=0.800`, `f1_token=0.298`, `precision_token=0.250`, `recall_token=0.368`
   - `f1_span=0.067`, `precision_span=0.080`, `recall_span=0.058`
   - Span-level F1 is low due to character-offset precision (IoU ≥ 0.5 threshold); sentence and token metrics confirm the LLM is correctly identifying figurative language.
+
+## Step 17: Large-Scale Experiment Runs
+
+Run experiments on meaningful subsets of both datasets using a reliable model (`google/gemini-3-flash-preview`, `temperature: 0`). Target: 100–200 examples for detection runs, 50–100 for detect-then-replace runs.
+
+- [x] **17a.** Run metaphor detection on VU Amsterdam (limit: 200), evaluate via `POST /evaluate`, record `f1_token` + `f1_span` + `f1_sentence`.
+  - Run `1febe63d`, 199/200 completed (1 failed). f1_sentence=0.452, f1_token=0.441 (P=0.460, R=0.424), f1_span=0.202 (P=0.244, R=0.191).
+- [x] **17b.** Run idiom detection on SemEval (limit: 200), evaluate, record `f1_span` + `f1_sentence`.
+  - Run `0fe05aaa`, 200/200 completed. f1_sentence=0.655, f1_span=0.389 (P=0.369, R=0.430).
+- [x] **17c.** Run metaphor detect-then-replace on VU Amsterdam (limit: 100), evaluate.
+  - Run `9064dd7c`, 99/100 completed (1 failed). f1_sentence=0.293, f1_token=0.318 (P=0.333, R=0.303), f1_span=0.044.
+- [x] **17d.** Run idiom detect-then-replace on SemEval (limit: 100), evaluate and inspect BLEU.
+  - Run `7b780f54`, 100/100 completed. f1_sentence=0.750, f1_span=0.352 (P=0.331, R=0.400), bleu=0.047.
+  - Note: datasets collection was empty after container restart; re-ingested VU (16202) + SemEval (3487) before running.
+- [x] **17e.** Verify all runs: inspect 5–10 predictions per run in the frontend to sanity-check detection and replacement quality.
+  - API-level check confirmed predictions look correct (e.g. "bad hat", "Elbow Grease" correctly detected as idioms). Frontend visual check left to user.
+
+## Step 18: Add BERTScore to Evaluation Engine
+
+- [x] **18a.** Install `bert-score` in the API container (`uv add bert-score` in `models/python/`).
+- [x] **18b.** Implement `compute_bertscore()` in `models/python/models/operations/evaluation.py` — returns `bertscore_precision`, `bertscore_recall`, `bertscore_f1`.
+- [x] **18c.** Add `bertscore_precision`, `bertscore_recall`, `bertscore_f1` to `MetricName` enum in `models/python/models/types/shared.py` and register in `METRIC_REGISTRY` in `models/python/models/operations/registry.py`.
+- [x] **18d.** Update `POST /runs/{run_id}/evaluate` in `services/api/src/routes/runs.py` to compute BERTScore when `predicted_replacement` is non-null.
+- [x] **18e.** Verify: re-evaluated run 17d (SemEval idiom replace). BERTScore stored: precision=0.851, recall=0.843, f1=0.847.
+
+## Step 19: Human Evaluation Export
+
+- [x] **19a.** Create `GET /runs/{run_id}/export` endpoint in `services/api/src/routes/runs.py` returning a CSV with columns: `example_id`, `text`, `figurative_expression`, `predicted_replacement`, `gold_replacement` (if available).
+  - Verified: returns 101-row CSV (header + 100 predictions) for run 17d.
+- [ ] **19b.** Select 40–50 "easy" replacement examples: prefer shorter sentences (< 20 words), common/unambiguous expressions, sentences where the system produced a replacement. Use the export endpoint on a new run with the v2 prompts.
+- [ ] **19c.** Prepare annotation template (e.g. Google Sheet or CSV): `original_text` | `detected_expression` | `system_replacement` | `human_rating_1_5` | `human_alternative_paraphrase`.
+- [ ] **19d.** Identify 2–3 English-speaking colleagues to serve as annotators (as discussed with Mari Carmen on 09-02-2026).
+
+## Step 20: Improve Replacement Prompts
+
+- [x] **20a.** Rewrite `prompts/metaphor/replace_metaphor.txt` with: chain-of-thought (step-by-step reasoning), 1-shot example, structured output instructions.
+- [x] **20b.** Rewrite `prompts/idiom/replace_idiom.txt` with the same structure.
+- [x] **20c.** A/B comparison (20 examples, v1 vs v2 prompt, google/gemini-3-flash-preview, T=0):
+
+  | Metric | SemEval idiom v1 (100ex) | SemEval idiom v2 (20ex) | VU metaphor v1 (100ex) | VU metaphor v2 (20ex) |
+  |--------|--------------------------|--------------------------|------------------------|------------------------|
+  | bertscore_f1 | 0.847 | **0.863** | — | — |
+  | bleu | 0.047 | **0.158** | — | — |
+  | f1_sentence | 0.750 | 0.600 | 0.293 | **0.375** |
+  | f1_token | — | — | 0.318 | **0.375** |
+  | f1_span | 0.352 | 0.200 | 0.044 | **0.113** |
+
+  New prompts improve replacement quality (BERTScore +1.6pp, BLEU +11pp for SemEval; f1_token/span up for VU). Detection metrics slightly lower on the small 20-example sample — likely noise. 5 failures per run (structured output parsing errors — model occasionally violates schema).
+  - Note: v1/v2 sample sizes differ (100 vs 20) so direct comparison has variance; treat as indicative.

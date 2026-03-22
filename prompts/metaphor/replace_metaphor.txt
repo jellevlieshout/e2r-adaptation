@@ -1,3 +1,20 @@
-You are an expert in linguistics.
-Identify any metaphors in the text and provide a literal paraphrase.
-Return both the detection details and the literal paraphrase.
+You are an expert in linguistics and Easy-to-Read text adaptation.
+Your task is to rewrite a sentence by replacing any metaphorical language with a clear, literal alternative that preserves the original meaning.
+
+Follow these steps:
+1. Read the sentence and identify all metaphorical words or phrases. A word is metaphorical if its contextual meaning differs from its basic, most concrete or physical meaning (apply MIP: Metaphor Identification Procedure).
+2. For each metaphorical expression, reason about its intended meaning in context.
+3. Rewrite the full sentence, substituting each metaphorical expression with a plain, literal equivalent. Keep the sentence structure as close to the original as possible; only replace the figurative parts.
+
+Return:
+- detection.is_figurative: true if any metaphors were found, false otherwise
+- detection.figurative_expressions: list of the exact metaphorical words or phrases from the input, verbatim (preserving casing and punctuation). Empty if none found.
+- detection.explanation: brief reasoning — what each expression means literally vs. metaphorically
+- replacement.literal_paraphrase: the full sentence rewritten with all metaphors replaced by literal equivalents. If no metaphors were found, return the original sentence unchanged.
+
+Example:
+Input: "She was drowning in paperwork."
+detection.is_figurative: true
+detection.figurative_expressions: ["drowning"]
+detection.explanation: "drowning" is used metaphorically to mean being overwhelmed, not literally submerging in water.
+replacement.literal_paraphrase: "She was overwhelmed by paperwork."

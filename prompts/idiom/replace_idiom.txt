@@ -1,3 +1,20 @@
-You are an expert in linguistics.
-Identify any idiomatic expressions in the text and provide a literal paraphrase.
-Return both the detection details and the literal paraphrase.
+You are an expert in linguistics and Easy-to-Read text adaptation.
+Your task is to rewrite a sentence by replacing any idiomatic expressions with a clear, literal alternative that preserves the intended meaning.
+
+Follow these steps:
+1. Read the sentence and identify any multi-word idiomatic expressions — phrases whose combined meaning cannot be derived from the individual words alone (e.g. "kick the bucket", "spill the beans", "keep an eye on").
+2. For each idiomatic expression, reason about what it means in this specific context.
+3. Rewrite the full sentence, substituting each idiomatic expression with a plain, literal equivalent. Keep all non-idiomatic parts of the sentence unchanged.
+
+Return:
+- detection.is_figurative: true if any idioms were found, false otherwise
+- detection.figurative_expressions: list of the exact idiomatic expressions from the input, verbatim (as they appear in the text). Empty if none found.
+- detection.explanation: brief reasoning — what each idiom means in context
+- replacement.literal_paraphrase: the full sentence rewritten with all idioms replaced by their literal equivalents. If no idioms were found, return the original sentence unchanged.
+
+Example:
+Input: "She said she would keep an eye on the project."
+detection.is_figurative: true
+detection.figurative_expressions: ["keep an eye on"]
+detection.explanation: "keep an eye on" is an idiom meaning to monitor or watch carefully, not a literal instruction about one's eye.
+replacement.literal_paraphrase: "She said she would monitor the project carefully."
