@@ -16,6 +16,7 @@ dependencies = [
     "langchain",
     "langchain-openai",
     "langsmith",
+    "bert-score>=0.3.13",
 ]
 
 [project.scripts]

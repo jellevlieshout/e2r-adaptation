@@ -6,6 +6,7 @@ from models.operations.evaluation import (
     compute_f1_span,
     compute_f1_sentence,
     compute_bleu,
+    compute_bertscore,
     span_iou,
 )
 from models.operations.registry import METRIC_REGISTRY
@@ -23,6 +24,7 @@ __all__ = [
     "compute_f1_span",
     "compute_f1_sentence",
     "compute_bleu",
+    "compute_bertscore",
     "span_iou",
     "METRIC_REGISTRY",
     "parse_vu_sentence",

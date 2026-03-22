@@ -1,8 +1,11 @@
+import csv
+import io
 import logging
 import uuid
 from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from models.entities.dataset_example import DatasetExample, DatasetExampleData
@@ -17,6 +20,7 @@ from models.operations import (
     compute_f1_span,
     compute_f1_sentence,
     compute_bleu,
+    compute_bertscore,
     load_prompt,
     compute_prompt_hash
 )
@@ -308,10 +312,12 @@ def _compute_metrics(
     span_metrics_sum = {"precision_span": 0.0, "recall_span": 0.0, "f1_span": 0.0}
     sentence_metrics_sum = {"f1_sentence": 0.0}
     bleu_sum = 0.0
+    bertscore_sum = {"bertscore_precision": 0.0, "bertscore_recall": 0.0, "bertscore_f1": 0.0}
 
     count_span = 0
     count_sentence = 0
     count_bleu = 0
+    count_bertscore = 0
 
     for pred in predictions:
         example = examples_map.get(pred.example_id)
@@ -346,6 +352,14 @@ def _compute_metrics(
             bleu_sum += res["bleu"]
             count_bleu += 1
 
+        # E. BERTScore (Replacement)
+        if example.metadata and example.metadata.get("gold_sentence_replacement") and pred.predicted_replacement:
+            res = compute_bertscore(example.metadata.get("gold_sentence_replacement"), pred.predicted_replacement)
+            bertscore_sum["bertscore_precision"] += res["bertscore_precision"]
+            bertscore_sum["bertscore_recall"] += res["bertscore_recall"]
+            bertscore_sum["bertscore_f1"] += res["bertscore_f1"]
+            count_bertscore += 1
+
     metrics = {}
 
     if all_gold_tokens:
@@ -361,6 +375,10 @@ def _compute_metrics(
 
     if count_bleu > 0:
         metrics["bleu"] = bleu_sum / count_bleu
+
+    if count_bertscore > 0:
+        for k, v in bertscore_sum.items():
+            metrics[k] = v / count_bertscore
 
     return metrics
 
@@ -475,4 +493,41 @@ async def get_run_metrics(run_id: str):
         run_id=run_id,
         metrics=metrics,
         examples_evaluated=len(predictions),
+    )
+
+
+@router.get("/{run_id}/export")
+async def export_run_predictions(run_id: str):
+    """
+    Export predictions for a run as a CSV file for human evaluation.
+    Columns: example_id, text, figurative_expression, predicted_replacement, gold_replacement.
+    """
+    run_data, predictions, examples_map = _fetch_run_predictions_examples(run_id)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["example_id", "text", "figurative_expression", "predicted_replacement", "gold_replacement"])
+
+    for pred in predictions:
+        det = pred.predicted_detection
+        figurative = "; ".join(det.figurative_expressions) if det and det.figurative_expressions else ""
+        replacement = pred.predicted_replacement or ""
+        example = examples_map.get(pred.example_id)
+        gold_replacement = ""
+        if example and example.metadata:
+            gold_replacement = example.metadata.get("gold_sentence_replacement", "")
+
+        writer.writerow([
+            pred.example_id,
+            pred.input_text,
+            figurative,
+            replacement,
+            gold_replacement,
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=run_{run_id[:8]}_predictions.csv"},
     )

@@ -45,6 +45,9 @@ class MetricName(str, Enum):
     RECALL_TOKEN = "recall_token"
     PRECISION_SPAN = "precision_span"
     RECALL_SPAN = "recall_span"
+    BERTSCORE_PRECISION = "bertscore_precision"
+    BERTSCORE_RECALL = "bertscore_recall"
+    BERTSCORE_F1 = "bertscore_f1"
 
 
 class Span(BaseModel):
