@@ -52,3 +52,13 @@ The project currently relies on free-tier models on OpenRouter. Recommended mode
 
 ## Verification
 - **Frontend Verification**: Front-end fixes or changes should always be verified in the browser by the agent. The front end is running at http://localhost:51732.
+
+## UPM Cluster Access
+
+Open-weights models (vLLM) run on the UPM A100 cluster.
+
+- **JupyterHub**: http://138.4.144.36/jupyterhub
+- **Username**: `jelle.vanlieshout`
+- Password kept out-of-band (not in this repo).
+
+After (re)starting vLLM on the cluster, expose it via ngrok HTTPS basic-auth tunnel — the subdomain rotates per restart, so update the corresponding base-URL env var in the local stack each time.

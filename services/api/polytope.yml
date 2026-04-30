@@ -43,6 +43,10 @@ tools:
             - { name: HTTP_PORT, value: pt.param port }
             - { name: LOG_LEVEL, value: pt.value api-log-level }
             - { name: OPENROUTER_API_KEY, value: pt.secret openrouter-api-key }
+            - { name: OPENROUTER_CONCURRENCY, value: pt.value openrouter-concurrency }
+            - { name: VLLM_BASE_URL, value: pt.secret vllm-base-url }
+            - { name: VLLM_BASIC_AUTH, value: pt.secret vllm-basic-auth }
+            - { name: VLLM_CONCURRENCY, value: pt.value vllm-concurrency }
             - { name: LANGCHAIN_API_KEY, value: pt.secret langchain-api-key }
             - { name: LANGCHAIN_TRACING_V2, value: "true" }
             - { name: LANGCHAIN_PROJECT, value: "e2r-adaptation" }

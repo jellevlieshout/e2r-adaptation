@@ -1,6 +1,8 @@
+import asyncio
 import csv
 import io
 import logging
+import os
 import uuid
 from typing import List, Optional
 
@@ -14,6 +16,7 @@ from models.entities.prediction import PredictionData
 from models.entities.run import RunData, RunStatus
 from models.types.shared import DatasetType, MetricName, PhenomenonType, TaskType
 from workflows.graph import get_graph
+from workflows.nodes import VLLM_MODEL_PREFIX
 from workflows.state import GraphState
 from models.operations import (
     compute_f1_token,
@@ -55,115 +58,125 @@ class RunMetricsResponse(BaseModel):
     examples_evaluated: int
 
 
-def _execute_run(run_data: RunData, limit: Optional[int] = None):
+def _resolve_concurrency(model_name: str) -> int:
+    """Pick the per-provider concurrency cap based on the model_name dispatch prefix.
+
+    OpenRouter spreads load across many backend GPUs, so 10 concurrent calls is
+    safe by default. The UPM A100 cluster runs vLLM on a single 40 GB GPU; the
+    KV cache competes with model weights for VRAM, so the cap is conservative
+    (4). When running a 70B Q4 model on the A100, the model itself fills the
+    card and concurrency must drop to 1 — set VLLM_CONCURRENCY=1 then.
+    """
+    if model_name.startswith(VLLM_MODEL_PREFIX):
+        return int(os.environ.get("VLLM_CONCURRENCY", "4"))
+    return int(os.environ.get("OPENROUTER_CONCURRENCY", "10"))
+
+
+async def _execute_run(run_data: RunData, limit: Optional[int] = None):
     logger.info(f"Starting run execution: {run_data.run_id}")
-    
+
     try:
         # 1. Load dataset examples
         ks: Keyspace = DatasetExample.get_keyspace()
-        
-        # Use ${keyspace} placeholder which is supported by our Keyspace wrapper
+
         query = """
             SELECT VALUE t FROM ${keyspace} t
             WHERE t.`dataset` = $1 AND t.`phenomenon` = $2
         """
-        
         if limit:
             query += f" LIMIT {limit}"
-            
-        rows = ks.query(
+
+        rows = list(ks.query(
             query,
             positional_parameters=[run_data.dataset.value, run_data.phenomenon.value]
-        )
-             
-        run_data.stats.total_examples = 0
-        run_idx = 0
-        
-        # Get the appropriate graph
+        ))
+
+        run_data.stats.total_examples = len(rows)
+
         graph = get_graph(run_data.phenomenon.value, run_data.task_type.value)
-        
-        # Retrieve prediction keyspace
+
         pred_ks = get_keyspace("predictions", bucket_name="main")
         pred_collection = pred_ks.get_collection()
-        
-        # Retrieve runs keyspace/collection for updates
         run_ks = get_keyspace("runs", bucket_name="main")
         run_collection = run_ks.get_collection()
 
-        # Iterate examples
-        for example_data in rows:
-            run_idx += 1
+        concurrency = _resolve_concurrency(run_data.model_name)
+        logger.info(f"Run {run_data.run_id}: {len(rows)} examples, concurrency={concurrency}")
+        sem = asyncio.Semaphore(concurrency)
+
+        async def process(example_data: dict) -> None:
             example_id = example_data.get("example_id")
             input_text = example_data.get("text", "")
-            
-            # Construct initial state
+
             state_input: GraphState = {
                 "input_text": input_text,
                 "dataset": run_data.dataset.value,
                 "phenomenon": run_data.phenomenon.value,
                 "model_name": run_data.model_name,
                 "temperature": run_data.temperature,
-                "detection_result": None, # Will be populated by graph
+                "detection_result": None,
                 "replacement_result": None,
                 "latency_ms": 0,
                 "token_usage": {},
                 "errors": []
             }
-            
-            try:
-                # Invoke graph
-                result_state = graph.invoke(state_input)
-                
-                # Check for errors
-                has_errors = len(result_state.get("errors", [])) > 0
-                
-                # Create Prediction document
-                # Convert detection_result to dict for Pydantic v2 compatibility
-                detection = result_state.get("detection_result")
-                if detection is not None and hasattr(detection, "model_dump"):
-                    detection = detection.model_dump()
 
-                pred = PredictionData(
-                    run_id=run_data.run_id,
-                    example_id=example_id,
-                    dataset=run_data.dataset,
-                    phenomenon=run_data.phenomenon,
-                    task_type=run_data.task_type,
-                    input_text=input_text,
-                    predicted_detection=detection,
-                    predicted_replacement=result_state.get("replacement_result"),
-                    latency_ms=result_state.get("latency_ms"),
-                    token_usage=result_state.get("token_usage"),
-                    raw_model_output=str(result_state.get("errors")) if has_errors else None,
-                    confidence=0.0
-                )
-                
-                if has_errors:
-                    logger.warning(f"Errors in run {run_data.run_id} example {example_id}: {result_state['errors']}")
+            async with sem:
+                try:
+                    result_state = await graph.ainvoke(state_input)
+
+                    has_errors = len(result_state.get("errors", [])) > 0
+
+                    detection = result_state.get("detection_result")
+                    if detection is not None and hasattr(detection, "model_dump"):
+                        detection = detection.model_dump()
+
+                    pred = PredictionData(
+                        run_id=run_data.run_id,
+                        example_id=example_id,
+                        dataset=run_data.dataset,
+                        phenomenon=run_data.phenomenon,
+                        task_type=run_data.task_type,
+                        input_text=input_text,
+                        predicted_detection=detection,
+                        predicted_replacement=result_state.get("replacement_result"),
+                        latency_ms=result_state.get("latency_ms"),
+                        token_usage=result_state.get("token_usage"),
+                        raw_model_output=str(result_state.get("errors")) if has_errors else None,
+                        confidence=0.0
+                    )
+
+                    if has_errors:
+                        logger.warning(f"Errors in run {run_data.run_id} example {example_id}: {result_state['errors']}")
+                        run_data.stats.failed += 1
+                    else:
+                        run_data.stats.completed += 1
+
+                    # Couchbase client is sync; offload to a worker thread so we
+                    # don't block the event loop while other examples are in flight.
+                    await asyncio.to_thread(
+                        pred_collection.upsert,
+                        pred.document_key(),
+                        pred.model_dump(mode="json"),
+                    )
+
+                except Exception as e:
+                    logger.error(f"Exception processing example {example_id}: {e}")
                     run_data.stats.failed += 1
-                else:
-                    run_data.stats.completed += 1
-                
-                # Upsert prediction
-                pred_collection.upsert(pred.document_key(), pred.model_dump(mode="json"))
-                
-                # Update run stats periodically in DB? For now only at end to save writes
-                
-            except Exception as e:
-                logger.error(f"Exception processing example {example_id}: {e}")
-                run_data.stats.failed += 1
-                
-        # Update final run status
-        run_data.stats.total_examples = run_idx
-        
+
+        await asyncio.gather(*(process(row) for row in rows))
+
         if run_data.stats.completed == 0 and run_data.stats.failed > 0:
-             run_data.status = RunStatus.FAILED
+            run_data.status = RunStatus.FAILED
         else:
-             run_data.status = RunStatus.COMPLETED
-        
-        # Upsert final run document
-        run_collection.upsert(run_data.document_key(), run_data.model_dump(mode="json"))
-        
+            run_data.status = RunStatus.COMPLETED
+
+        await asyncio.to_thread(
+            run_collection.upsert,
+            run_data.document_key(),
+            run_data.model_dump(mode="json"),
+        )
+
         logger.info(f"Run {run_data.run_id} completed. Stats: {run_data.stats}")
 
     except Exception as e:
@@ -171,8 +184,12 @@ def _execute_run(run_data: RunData, limit: Optional[int] = None):
         run_data.status = RunStatus.FAILED
         try:
             run_ks = get_keyspace("runs", bucket_name="main")
-            run_ks.get_collection().upsert(run_data.document_key(), run_data.model_dump(mode="json"))
-        except:
+            await asyncio.to_thread(
+                run_ks.get_collection().upsert,
+                run_data.document_key(),
+                run_data.model_dump(mode="json"),
+            )
+        except Exception:
             pass
 
 

@@ -66,11 +66,28 @@ def _derive_token_labels(input_text: str, spans: List[Span]) -> List[int]:
     return labels
 
 
+VLLM_MODEL_PREFIX = "vllm:"
+
+
 def get_model(state: GraphState) -> ChatOpenAI:
-    # Import locally to avoid potential circular dependencies if any
+    """Dispatch on a `vllm:` prefix in model_name to route to the UPM cluster.
+
+    Examples:
+        "google/gemini-3-flash-preview"            -> OpenRouter
+        "vllm:Qwen/Qwen2.5-7B-Instruct"            -> UPM vLLM cluster
+    """
+    model_name: str = state["model_name"]
+    temperature: float = state["temperature"]
+
+    if model_name.startswith(VLLM_MODEL_PREFIX):
+        from clients.vllm.client import VLLMClient
+        client = VLLMClient()
+        actual_model = model_name[len(VLLM_MODEL_PREFIX):]
+        return client.get_chat_model(actual_model, temperature)
+
     from clients.openrouter.client import OpenRouterClient
     client = OpenRouterClient()
-    return client.get_chat_model(state["model_name"], state["temperature"])
+    return client.get_chat_model(model_name, temperature)
 
 def _invoke_llm(state: GraphState, phenomenon: str, task_type: str) -> Dict[str, Any]:
     try:

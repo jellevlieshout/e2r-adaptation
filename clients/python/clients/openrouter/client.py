@@ -24,21 +24,27 @@ class OpenRouterClient:
             # if openrouter_api_key: ... use base_url ... else: ... use standard ...
             pass
 
-    def get_chat_model(self, model_name: str, temperature: float = 0.0) -> ChatOpenAI:
+    def get_chat_model(self, model_name: str, temperature: float = 0.0, max_tokens: int = 3000) -> ChatOpenAI:
         """
         Returns a configured ChatOpenAI instance for OpenRouter.
         If OPENROUTER_API_KEY is properly set, it configures the base_url.
         If not, it defaults to standard OpenAI behavior (which relies on OPENAI_API_KEY).
+
+        max_tokens caps completion length. Default 2000 is generous for a
+        single-sentence replacement plus structured output + explanation, and
+        protects against runaway generations (e.g. google/gemini-3-flash-preview
+        was observed producing 65k-token outputs at ~$0.20 each).
         """
+        common = {
+            "model": model_name,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
         if self.api_key:
             return ChatOpenAI(
-                model=model_name,
-                temperature=temperature,
+                **common,
                 api_key=self.api_key,
                 base_url="https://openrouter.ai/api/v1",
             )
-        
-        # Fallback to standard OpenAI if no OpenRouter key is found
-        # This preserves the original logic flow where if OpenRouter key wasn't present,
-        # it just returned ChatOpenAI(model=...)
-        return ChatOpenAI(model=model_name, temperature=temperature)
+
+        return ChatOpenAI(**common)

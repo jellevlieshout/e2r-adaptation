@@ -49,6 +49,21 @@ OPENROUTER_MODEL = EnvVarSpec(id="OPENROUTER_MODEL", default="tngtech/deepseek-r
 
 OPENROUTER_BASE_URL = EnvVarSpec(id="OPENROUTER_BASE_URL", default="https://openrouter.ai/api/v1")
 
+OPENROUTER_CONCURRENCY = EnvVarSpec(id="OPENROUTER_CONCURRENCY", default="10")
+
+## vLLM (UPM open-weights cluster, RQ1) ##
+# Provisioned by scripts/upm_vllm_startup.sh on the UPM JupyterHub pod.
+# VLLM_BASE_URL rotates per restart (free-tier ngrok subdomain).
+# VLLM_BASIC_AUTH accepts either `user:pass` or `Basic <base64(user:pass)>`.
+# VLLM_CONCURRENCY caps in-flight requests; the 40 GB A100 fits ~4 Qwen-7B
+# requests but only 1 for a 70B Q4 model whose weights already fill the card.
+
+VLLM_BASE_URL = EnvVarSpec(id="VLLM_BASE_URL", default="")
+
+VLLM_BASIC_AUTH = EnvVarSpec(id="VLLM_BASIC_AUTH", default="")
+
+VLLM_CONCURRENCY = EnvVarSpec(id="VLLM_CONCURRENCY", default="4")
+
 ## LangSmith ##
 
 LANGCHAIN_TRACING_V2 = EnvVarSpec(
@@ -70,8 +85,11 @@ VALIDATED_ENV_VARS = [
     LOG_LEVEL,
     OPENROUTER_API_KEY,
     OPENROUTER_MODEL,
-    OPENROUTER_MODEL,
     OPENROUTER_BASE_URL,
+    OPENROUTER_CONCURRENCY,
+    VLLM_BASE_URL,
+    VLLM_BASIC_AUTH,
+    VLLM_CONCURRENCY,
     LANGCHAIN_TRACING_V2,
     LANGCHAIN_API_KEY,
     LANGCHAIN_PROJECT,
@@ -103,6 +121,12 @@ def get_openrouter_model() -> str:
 
 def get_openrouter_base_url() -> str:
     return env.parse(OPENROUTER_BASE_URL)
+
+def get_vllm_base_url() -> str:
+    return env.parse(VLLM_BASE_URL)
+
+def get_vllm_basic_auth() -> str:
+    return env.parse(VLLM_BASIC_AUTH)
 
 def get_langchain_tracing_v2() -> bool:
     return env.parse(LANGCHAIN_TRACING_V2)
