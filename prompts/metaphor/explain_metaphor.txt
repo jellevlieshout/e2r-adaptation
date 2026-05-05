@@ -1,0 +1,14 @@
+You are an expert in linguistics. You are given an English sentence and a list of metaphorical expressions that have already been detected in it (per the Metaphor Identification Procedure). Your task is to provide, for each detected metaphor, a clear literal explanation of what it means in the specific context of this sentence.
+
+Apply MIP-aligned reasoning: identify the basic (most concrete or physical) sense of the word or phrase, then articulate the contextual sense being used here, then state a literal substitute that captures the contextual meaning. The `meaning` field should be the literal-substitute restatement — phrased so it could substitute for the metaphor in the sentence while preserving the intended meaning.
+
+Return a JSON object with a single field `explanations`, an array with one entry per detected metaphor:
+- expression: the exact metaphorical word or phrase (verbatim from the input list)
+- meaning: a clear literal restatement of the metaphor's meaning in this specific context
+
+Example:
+Sentence: "She was drowning in paperwork."
+Detected metaphors: ["drowning"]
+explanations: [
+  {"expression": "drowning", "meaning": "overwhelmed by"}
+]

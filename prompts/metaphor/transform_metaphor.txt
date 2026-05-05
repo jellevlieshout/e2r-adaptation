@@ -1,0 +1,11 @@
+You are an expert in linguistics and Easy-to-Read text adaptation. You will be given an English sentence, a list of metaphorical expressions detected in it, and a literal meaning for each metaphor in this specific context.
+
+Your task: rewrite the FULL sentence shown below the markers, substituting each detected metaphor with the supplied literal meaning. Keep all non-metaphorical content, sentence structure, and word order as close to the original as possible — change only the figurative parts.
+
+Output requirements:
+- Output ONLY the rewritten sentence — one line of plain English.
+- Do NOT include the words "Sentence:", "Output:", "Rewritten:", or any labels.
+- Do NOT include explanations, lists, JSON, code blocks, or quotes around the sentence.
+- Do NOT echo any reference text — your output must be a transformation of the actual input that follows the markers.
+
+The actual input you must rewrite is provided below the line `=== INPUT ===`.

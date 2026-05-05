@@ -23,7 +23,7 @@ from models.operations import (
     compute_f1_span,
     compute_f1_sentence,
     compute_bleu,
-    compute_bertscore,
+    compute_bertscore_batch,
     load_prompt,
     compute_prompt_hash
 )
@@ -44,6 +44,7 @@ class RunRequest(BaseModel):
     prompt_version: str
     few_shot_examples: int = 0
     limit: Optional[int] = None  # For testing
+    example_ids: Optional[List[str]] = None  # Run only on these specific examples
 
 
 class RunResponse(BaseModel):
@@ -72,24 +73,41 @@ def _resolve_concurrency(model_name: str) -> int:
     return int(os.environ.get("OPENROUTER_CONCURRENCY", "10"))
 
 
-async def _execute_run(run_data: RunData, limit: Optional[int] = None):
+async def _execute_run(run_data: RunData, limit: Optional[int] = None, example_ids: Optional[List[str]] = None):
     logger.info(f"Starting run execution: {run_data.run_id}")
 
     try:
         # 1. Load dataset examples
         ks: Keyspace = DatasetExample.get_keyspace()
 
-        query = """
-            SELECT VALUE t FROM ${keyspace} t
-            WHERE t.`dataset` = $1 AND t.`phenomenon` = $2
-        """
-        if limit:
-            query += f" LIMIT {limit}"
+        if example_ids:
+            # Targeted run on a specific list of example_ids — used by the
+            # survey-pool generation pipeline (Step 22) where we need
+            # predictions on the SAME 30 sources across multiple system
+            # conditions. The plain `LIMIT` query is non-deterministic across
+            # ingests because there is no ORDER BY clause.
+            query = """
+                SELECT VALUE t FROM ${keyspace} t
+                WHERE t.`dataset` = $1 AND t.`phenomenon` = $2
+                AND t.`example_id` IN $3
+            """
+            rows = list(ks.query(
+                query,
+                positional_parameters=[run_data.dataset.value, run_data.phenomenon.value, example_ids]
+            ))
+        else:
+            query = """
+                SELECT VALUE t FROM ${keyspace} t
+                WHERE t.`dataset` = $1 AND t.`phenomenon` = $2
+                ORDER BY t.`example_id`
+            """
+            if limit:
+                query += f" LIMIT {limit}"
 
-        rows = list(ks.query(
-            query,
-            positional_parameters=[run_data.dataset.value, run_data.phenomenon.value]
-        ))
+            rows = list(ks.query(
+                query,
+                positional_parameters=[run_data.dataset.value, run_data.phenomenon.value]
+            ))
 
         run_data.stats.total_examples = len(rows)
 
@@ -140,6 +158,7 @@ async def _execute_run(run_data: RunData, limit: Optional[int] = None):
                         input_text=input_text,
                         predicted_detection=detection,
                         predicted_replacement=result_state.get("replacement_result"),
+                        intermediate_explanations=result_state.get("explanations_pipeline"),
                         latency_ms=result_state.get("latency_ms"),
                         token_usage=result_state.get("token_usage"),
                         raw_model_output=str(result_state.get("errors")) if has_errors else None,
@@ -226,7 +245,7 @@ async def create_run(request: RunRequest, background_tasks: BackgroundTasks):
     run_ks.get_collection().upsert(run_data.document_key(), run_data.model_dump(mode="json"))
     
     # Start background execution
-    background_tasks.add_task(_execute_run, run_data, request.limit)
+    background_tasks.add_task(_execute_run, run_data, request.limit, request.example_ids)
     
     return RunResponse(
         run_id=run_id,
@@ -329,12 +348,16 @@ def _compute_metrics(
     span_metrics_sum = {"precision_span": 0.0, "recall_span": 0.0, "f1_span": 0.0}
     sentence_metrics_sum = {"f1_sentence": 0.0}
     bleu_sum = 0.0
-    bertscore_sum = {"bertscore_precision": 0.0, "bertscore_recall": 0.0, "bertscore_f1": 0.0}
 
     count_span = 0
     count_sentence = 0
     count_bleu = 0
-    count_bertscore = 0
+
+    # BERTScore is the dominant cost in /evaluate (loads RoBERTa). Collect all
+    # (gold, pred) pairs first and call compute_bertscore_batch once at the
+    # end so the model loads exactly once instead of per-prediction.
+    bertscore_golds: list[str] = []
+    bertscore_preds: list[str] = []
 
     for pred in predictions:
         example = examples_map.get(pred.example_id)
@@ -369,15 +392,17 @@ def _compute_metrics(
             bleu_sum += res["bleu"]
             count_bleu += 1
 
-        # E. BERTScore (Replacement)
+        # E. BERTScore: collect pairs for batch scoring after the loop.
         if example.metadata and example.metadata.get("gold_sentence_replacement") and pred.predicted_replacement:
-            res = compute_bertscore(example.metadata.get("gold_sentence_replacement"), pred.predicted_replacement)
-            bertscore_sum["bertscore_precision"] += res["bertscore_precision"]
-            bertscore_sum["bertscore_recall"] += res["bertscore_recall"]
-            bertscore_sum["bertscore_f1"] += res["bertscore_f1"]
-            count_bertscore += 1
+            bertscore_golds.append(example.metadata["gold_sentence_replacement"])
+            bertscore_preds.append(pred.predicted_replacement)
 
     metrics = {}
+
+    # BERTScore — single batched call (loads RoBERTa once).
+    if bertscore_golds:
+        logger.info(f"Computing BERTScore over {len(bertscore_golds)} pairs (batched)")
+        metrics.update(compute_bertscore_batch(bertscore_golds, bertscore_preds))
 
     if all_gold_tokens:
         token_res = compute_f1_token(all_gold_tokens, all_pred_tokens)
@@ -392,10 +417,6 @@ def _compute_metrics(
 
     if count_bleu > 0:
         metrics["bleu"] = bleu_sum / count_bleu
-
-    if count_bertscore > 0:
-        for k, v in bertscore_sum.items():
-            metrics[k] = v / count_bertscore
 
     return metrics
 
@@ -443,7 +464,10 @@ async def evaluate_run(run_id: str):
     if not predictions:
         return RunMetricsResponse(run_id=run_id, metrics={}, examples_evaluated=0)
 
-    metrics = _compute_metrics(run_data, predictions, examples_map)
+    # _compute_metrics calls bert_score (CPU-heavy, loads RoBERTa). Offload to
+    # a worker thread so the FastAPI event loop stays responsive — otherwise a
+    # 200-example evaluation blocks every other route for ~10–20 s.
+    metrics = await asyncio.to_thread(_compute_metrics, run_data, predictions, examples_map)
 
     # Persist each metric as an EvaluationData document
     eval_ks = get_keyspace("evaluations", bucket_name="main")
@@ -504,7 +528,9 @@ async def get_run_metrics(run_id: str):
     if not predictions:
         return RunMetricsResponse(run_id=run_id, metrics={}, examples_evaluated=0)
 
-    metrics = _compute_metrics(run_data, predictions, examples_map)
+    # See note in evaluate_run — offload to a worker thread to keep the event
+    # loop responsive while bert_score runs.
+    metrics = await asyncio.to_thread(_compute_metrics, run_data, predictions, examples_map)
 
     return RunMetricsResponse(
         run_id=run_id,

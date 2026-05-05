@@ -26,6 +26,8 @@ class TaskType(str, Enum):
     DETECTION = "detection"
     REPLACEMENT = "replacement"
     DETECT_THEN_REPLACE = "detect_then_replace"
+    MONOLITHIC_REPLACE = "monolithic_replace"
+    PIPELINE_REPLACE = "pipeline_replace"
 
 
 class RunStatus(str, Enum):

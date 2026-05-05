@@ -1,0 +1,3 @@
+Rewrite the following sentence in plain, literal English. If it contains any figurative or idiomatic expressions, replace them with literal alternatives that preserve the original meaning. Otherwise, keep the sentence as is.
+
+Output only the rewritten sentence. Do not provide explanations, lists, or any other content.
