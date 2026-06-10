@@ -431,6 +431,22 @@ Reasonable ratings for this output: grammaticality ~ 95 (well-formed), meaning p
 
 It is possible that you will find poor replacements or repeated items. This is expected.
 
+**Rating questions (build once on the first item section, then duplicate that section 19 times and only swap the description text per item):**
+
+Configure each numeric question in MS Forms as type=Number, Min=0, Max=100, Required=OFF.
+
+**Q.1** (Number, optional, min=0 max=100)
+> Rate the **grammaticality** of the system's replacement (0 = ungrammatical, 100 = perfect English).
+
+**Q.2** (Number, optional, min=0 max=100)
+> Rate the **meaning preservation** of the system's replacement against the original (0 = different meaning, 100 = exactly the same meaning).
+
+**Q.3** (Number, optional, min=0 max=100)
+> Rate the **simplicity** of the system's replacement compared to the original (0 = harder to read, 100 = much easier to read).
+
+**Q.4** (Text, optional, long answer)
+> If the system's replacement misses the mark, what would you write instead? (Optional — leave blank if the replacement is fine.)
+
 ---
 """
 
@@ -448,25 +464,17 @@ def render_form(rows: list[dict], seed: int) -> str:
         parts.append(
             f"""## Section {i + 1} — Item {i}/20
 
-**Section description (paste verbatim):**
+Section description (use the copy button on the block below, then paste into the MS Forms section description box):
 
-> **Original sentence:** {original}
->
-> **Idiom detected by the system:** *{detected}*
->
-> **System's replacement:** {replacement}
+```text
+Original sentence: {original}
 
-**Q{i}.1** (Number, optional, min=0 max=100)
-> Rate the **grammaticality** of the system's replacement (0 = ungrammatical, 100 = perfect English).
 
-**Q{i}.2** (Number, optional, min=0 max=100)
-> Rate the **meaning preservation** of the system's replacement against the original (0 = different meaning, 100 = exactly the same meaning).
+Idiom detected by the system: {detected}
 
-**Q{i}.3** (Number, optional, min=0 max=100)
-> Rate the **simplicity** of the system's replacement compared to the original (0 = harder to read, 100 = much easier to read).
 
-**Q{i}.4** (Text, optional, long answer)
-> If the system's replacement misses the mark, what would you write instead? (Optional — leave blank if the replacement is fine.)
+System's replacement: {replacement}
+```
 
 ---
 """
