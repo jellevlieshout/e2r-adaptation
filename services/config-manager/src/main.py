@@ -7,7 +7,6 @@ import time
 from pathlib import Path
 from config import Config
 from controllers.couchbase_controller import CouchbaseController
-from controllers.redpanda_controller import RedpandaController
 from utils.logger import get_logger
 
 def get_env_var(name, default=None):
@@ -63,13 +62,6 @@ def main():
             couchbase_controller.run_ops()
             processed_count += 1
             logger.info("✅ Couchbase processing completed")
-
-        if 'redpanda' in target_ids:
-            logger.info("🔄 Processing Redpanda configuration...")
-            redpanda_controller = RedpandaController(environment, config)
-            redpanda_controller.run_ops()
-            processed_count += 1
-            logger.info("✅ Redpanda processing completed")
 
         if target_ids:
             logger.info(f"🎉 Configuration processing completed! Completed {processed_count}/{len(target_ids)} targets")
