@@ -9,3 +9,6 @@ set-values-and-secrets
 # Python build artifacts
 __pycache__/
 *.pyc
+
+# Local Couchbase backup (large; keep out of git)
+cb-backup/
